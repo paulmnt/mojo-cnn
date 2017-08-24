@@ -1,16 +1,10 @@
 
 # Define V=1 for a more verbose compilation
 ifndef V
-        QUIET_BUILD         = @echo '   ' BUILD $@;
-        QUIET_CC            = @echo '   ' CC $@;
         QUIET_CXX           = @echo '   ' CXX $@;
-        QUIET_LINK          = @echo '   ' LINK $@;
-        QUIET_CP            = @echo '   ' CP $@;
-        QUIET_RM            = @echo '   ' RM $@;
         QUIET_MKDIR         = @echo '   ' MKDIR $@;
-        QUIET_MAKE          = @echo '   ' MAKE $@;
-        QUIET_INFO          = @echo -n '   ' INFO '';
         QUIET_RUN           = @echo '   ' RUN $@;
+        QUIET_WGET           = @echo '   ' WGET $@;
         QUIET_CLEAN         = @echo '   ' CLEAN $@;
 endif
 
@@ -66,4 +60,33 @@ all: $(OBJS)
 clean:
 	$(QUIET_CLEAN) $(RM) $(OBJS)
 
-.PHONY: all clean
+distclean: clean
+	$(QUIET_CLEAN) $(RM) ../data/cifar-10-batches-bin ../data/cifar-10-binary.tar.gz ../data/mnist
+
+.PHONY: all clean distclean
+
+
+
+MNIST_DATA := ../data/mnist/train-labels-idx1-ubyte \
+		../data/mnist/t10k-labels-idx1-ubyte \
+		../data/mnist/train-images-idx3-ubyte \
+		../data/mnist/t10k-images-idx3-ubyte
+
+$(MNIST_DATA):
+	$(QUIET_MKDIR) mkdir -p ../data/mnist
+	$(QUIET_WGET) wget $(subst ../data,http://yann.lecun.com/exdb,$@.gz) -O $@.gz
+	gzip -d $@.gz
+
+../data/cifar-10-binary.tar.gz:
+	wget $(subst ../data,https://www.cs.toronto.edu/~kriz/, $@) -O $@
+
+
+../data/cifar-10-batches-bin: ../data/cifar-10-binary.tar.gz
+	tar xf $< -C ../data
+
+
+data: $(MNIST_DATA) ../data/cifar-10-batches-bin
+
+.PHONY: data
+
+#TODO: write run targets with LD_LIBRARY_PATH set and data dependencies
