@@ -545,7 +545,8 @@ mojo::matrix draw_cnn_weights(mojo::network &cnn, int layer_index, mojo::mojo_pa
 
 	}
 	*/
-	return cv2matrix(colorize(im, color_palette));
+	cv::Mat colorized = colorize(im, color_palette);
+	return cv2matrix(colorized);
 }
 
 mojo::matrix draw_cnn_weights(mojo::network &cnn, std::string layer_name, mojo::mojo_palette color_palette = mojo::gray)
@@ -587,7 +588,8 @@ mojo::matrix draw_cnn_state(mojo::network &cnn, int layer_index, mojo::mojo_pale
 	}
 	im = tmp;
 
-	return cv2matrix(colorize(im, color_palette));
+	cv::Mat colorized = colorize(im, color_palette);
+	return cv2matrix(colorized);
 }
 
 mojo::matrix draw_cnn_state(mojo::network &cnn, std::string layer_name, mojo::mojo_palette color_palette = mojo::gray)
