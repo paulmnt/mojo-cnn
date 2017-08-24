@@ -1,22 +1,69 @@
-CC=g++
-CFLAGS_OMP= -I../mojo/ -std=c++11 -fopenmp -O3 -DMOJO_OPM -DMOJO_AVX -msse4 -mavx
 
-all: test train_mnist train_cifar vgg
+# Define V=1 for a more verbose compilation
+ifndef V
+        QUIET_BUILD         = @echo '   ' BUILD $@;
+        QUIET_CC            = @echo '   ' CC $@;
+        QUIET_CXX           = @echo '   ' CXX $@;
+        QUIET_LINK          = @echo '   ' LINK $@;
+        QUIET_CP            = @echo '   ' CP $@;
+        QUIET_RM            = @echo '   ' RM $@;
+        QUIET_MKDIR         = @echo '   ' MKDIR $@;
+        QUIET_MAKE          = @echo '   ' MAKE $@;
+        QUIET_INFO          = @echo -n '   ' INFO '';
+        QUIET_RUN           = @echo '   ' RUN $@;
+        QUIET_CLEAN         = @echo '   ' CLEAN $@;
+endif
 
-test: test.cpp
-	$(CC) $(CFLAGS_OMP) test.cpp -o test
+RM = rm -rf
 
-train_mnist: train_mnist.cpp
-	$(CC) $(CFLAGS_OMP) train_mnist.cpp -o train_mnist
+OPENCV ?= /opt/opencv
 
-train_cifar: train_cifar.cpp
-	$(CC) $(CFLAGS_OMP) train_cifar.cpp -o train_cifar
+INCDIR = -I$(OPENCV)/include -I../mojo/
 
-vgg: vgg.cpp
-	$(CC) $(CFLAGS_OMP) vgg.cpp -o vgg
+CXXFLAGS ?= -std=c++11 -O3
+CXXFLAGS += $(INCDIR)
+ifdef OMP
+CXXFLAGS += -fopenmp -DMOJO_OPM
+endif
+ifdef OCV2
+CXXFLAGS += -DMOJO_CV2
+endif
+ifdef OCV3
+CXXFLAGS += -DMOJO_CV3
+endif
+ifdef AVX
+CXXFLAGS += -DMOJO_AVX -msse4 -mavx
+endif
+
+LDLIBS = -L$(OPENCV)/lib
+
+LDFLAGS = \
+	-lopencv_videostab \
+	-lopencv_photo \
+	-lopencv_stitching \
+	-lopencv_objdetect \
+	-lopencv_video \
+	-lopencv_ml \
+	-lopencv_calib3d \
+	-lopencv_features2d \
+	-lopencv_imgcodecs \
+	-lopencv_highgui \
+	-lopencv_flann \
+	-lopencv_imgproc \
+	-lopencv_core
+
+SRCS := test.cpp train_mnist.cpp train_cifar.cpp vgg.cpp
+OBJS := $(SRCS:.cpp=)
+HDRS := $(wildcard ../mojo/*.h)
+
+all: $(OBJS)
+
+.SUFFIX: .c .cpp
+
+.c:
+	$(QUIET_CXX) $(CXX) $(CXXFLAGS) $< -o $@ $(LDLIBS) $(LDFLAGS)
 
 clean:
-	-rm -f vgg
-	-rm -f test
-	-rm -f train_mnist
-	-rm -f train_cifar
+	$(QUIET_CLEAN) $(RM) $(OBJS)
+
+.PHONY: all clean
