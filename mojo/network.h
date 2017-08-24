@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -122,7 +122,7 @@ mojo::matrix transform(const mojo::matrix in, const int x_center, const int y_ce
 	void StartCounter(){}
 	double GetCounter(){return 0;}
 #endif
-	
+
 #endif
 	//*/
 
@@ -155,27 +155,27 @@ float match_labels(const float *out, const float *target, const int size, int *b
 int arg_max(const float *out, const int size)
 {
 	int max_j = 0;
-	for (int j = 0; j<size; j++) 
-		if (out[max_j]<out[j])  
+	for (int j = 0; j<size; j++)
+		if (out[max_j]<out[j])
 		{max_j = j; }//std::cout <<j<<",";}
 	return max_j;
 }
 
 //----------------------------------------------------------------------
-//  network  
+//  network
 //  - class that holds all the layers and connection information
 //	- runs forward prediction
 
 class network
 {
-	
+
 	int _size;  // output size
 	int _thread_count; // determines number of layer sets (copys of layers)
 	int _internal_thread_count; // used for speeding up convolutions, etc..
 	static const int MAIN_LAYER_SET = 0;
 
 	// training related stuff
-	int _batch_size;   // determines number of dW sets 
+	int _batch_size;   // determines number of dW sets
 	float _skip_energy_level;
 	bool _smart_train;
 	std::vector <float> _running_E;
@@ -199,7 +199,7 @@ class network
 	int get_thread_num() {return 0;}
 #endif
 
-public:	
+public:
 	// training progress stuff
 	int train_correct;
 	int train_skipped;
@@ -225,21 +225,21 @@ public:
 	// here we have multiple sets of the layers to allow threading and batch processing
 	// a separate layer set is needed for each independent thread
 	std::vector< std::vector<base_layer *>> layer_sets;
-	
+
 	std::map<std::string, int> layer_map;  // name-to-index of layer for layer management
 	std::vector<std::pair<std::string, std::string>> layer_graph; // pairs of names of layers that are connected
-	std::vector<matrix *> W; // these are the weights between/connecting layers 
+	std::vector<matrix *> W; // these are the weights between/connecting layers
 
 	// these sets are needed because we need copies for each item in mini-batch
 	std::vector< std::vector<matrix>> dW_sets; // only for training, will have _batch_size of these
 	std::vector< std::vector<matrix>> dbias_sets; // only for training, will have _batch_size of these
-	std::vector< unsigned char > batch_open; // only for training, will have _batch_size of these	
-	
+	std::vector< unsigned char > batch_open; // only for training, will have _batch_size of these
 
-	network(const char* opt_name=NULL): _thread_count(1), _skip_energy_level(0.f), _batch_size(1) 
-	{ 
+
+	network(const char* opt_name=NULL): _thread_count(1), _skip_energy_level(0.f), _batch_size(1)
+	{
 		_internal_thread_count=1;
-		_size=0;  
+		_size=0;
 		_solver = new_solver(opt_name);
 		_cost_function = NULL;
 		//std::vector<base_layer *> layer_set;
@@ -252,7 +252,7 @@ public:
 		train_correct = 0;
 		train_samples = 0;
 		train_skipped = 0;
-		epoch_count = 0; 
+		epoch_count = 0;
 		max_epochs = 1000;
 		train_updates = 0;
 		estimated_accuracy = 0;
@@ -261,8 +261,8 @@ public:
 		best_estimated_accuracy=0;
 		best_accuracy_count=0;
 		use_augmentation=0;
-		augment_x = 0; augment_y = 0; augment_h_flip = 0; augment_v_flip = 0; 
-		augment_pad =mojo::edge; 
+		augment_x = 0; augment_y = 0; augment_h_flip = 0; augment_v_flip = 0;
+		augment_pad =mojo::edge;
 		augment_theta=0; augment_scale=0;
 
 		init_lock();
@@ -271,13 +271,13 @@ public:
         af::info();
 #endif
 	}
-	
-	~network() 
+
+	~network()
 	{
 		clear();
 		if (_cost_function) delete _cost_function;
-		if(_solver) delete _solver; 
-		destroy_lock();	
+		if(_solver) delete _solver;
+		destroy_lock();
 	}
 
 	// call clear if you want to load a different configuration/model
@@ -289,7 +289,7 @@ public:
 			layer_sets.clear();
 		}
 		layer_sets.clear();
-		__for__(auto w __in__ W) if(w) delete w;  
+		__for__(auto w __in__ W) if(w) delete w;
 		W.clear();
 		layer_map.clear();
 		layer_graph.clear();
@@ -298,10 +298,10 @@ public:
 	// output size of final layer;
 	int out_size() {return _size;}
 
-	// get input size 
+	// get input size
 	bool get_input_size(int *w, int *h, int *c)
 	{
-		if(layer_sets[MAIN_LAYER_SET].size()<1) return false; 
+		if(layer_sets[MAIN_LAYER_SET].size()<1) return false;
 		*w=layer_sets[MAIN_LAYER_SET][0]->node.cols;*h=layer_sets[MAIN_LAYER_SET][0]->node.rows;*c=layer_sets[MAIN_LAYER_SET][0]->node.chans;
 		return true;
 	}
@@ -345,13 +345,13 @@ public:
 
 	}
 
-	// when using threads, need to get bias data synched between all layer sets, 
+	// when using threads, need to get bias data synched between all layer sets,
 	// call this after bias update in main layer set to copy the bias to the other sets
 	void sync_layer_sets()
 	{
 		for(int i=1; i<(int)layer_sets.size();i++)
 			for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size(); j++)
-				for(int k=0; k<layer_sets[MAIN_LAYER_SET][j]->bias.size(); k++) 
+				for(int k=0; k<layer_sets[MAIN_LAYER_SET][j]->bias.size(); k++)
 					(layer_sets[i])[j]->bias.x[k]=(layer_sets[MAIN_LAYER_SET])[j]->bias.x[k];
 	}
 
@@ -364,7 +364,7 @@ public:
 			matrix noise(w->cols, w->rows, w->chans);
 			noise.fill_random_normal(1.f/ noise.size());
 			//noise *= *w;
-			*w += noise; 
+			*w += noise;
 		}
 	}
 
@@ -377,7 +377,7 @@ public:
 
 	// used to push a layer back in the ORDERED list of layers
 	// if connect_all() is used, then the order of the push_back is used to connect the layers
-	// when forward or backward propogation, this order is used for the serialized order of calculations 
+	// when forward or backward propogation, this order is used for the serialized order of calculations
 	// Layer_name must be unique.
 	bool push_back(const char *layer_name, const char *layer_config)
 	{
@@ -408,14 +408,14 @@ public:
 	// my 'top' is the input of a forward() pass and the 'bottom' is the output
 	// perhaps 'top' traditionally comes from the brain model, but my 'top' comes
 	// from reading order (information flows top to bottom)
-	void connect(const char *layer_name_top, const char *layer_name_bottom) 
+	void connect(const char *layer_name_top, const char *layer_name_bottom)
 	{
 		size_t i_top=layer_map[layer_name_top];
 		size_t i_bottom=layer_map[layer_name_bottom];
 
 		base_layer *l_top= layer_sets[MAIN_LAYER_SET][i_top];
 		base_layer *l_bottom= layer_sets[MAIN_LAYER_SET][i_bottom];
-		
+
 		int w_i=(int)W.size();
 		matrix *w = l_bottom->new_connection(*l_top, w_i);
 		W.push_back(w);
@@ -428,7 +428,7 @@ public:
 			delete l_bottom->new_connection(*l_top, w_i);
 		}
 
-		// we need to let solver prepare space for stateful information 
+		// we need to let solver prepare space for stateful information
 		if (_solver)
 		{
 			if (w)_solver->push_back(w->cols, w->rows, w->chans);
@@ -474,11 +474,11 @@ public:
 		else if (w) w->fill(0);
 	}
 
-	// automatically connect all layers in the order they were provided 
+	// automatically connect all layers in the order they were provided
 	// easy way to go, but can't deal with branch/highway/resnet/inception types of architectures
 	void connect_all()
-	{	
-		for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size()-1; j++) 
+	{
+		for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size()-1; j++)
 			connect(layer_sets[MAIN_LAYER_SET][j]->name.c_str(), layer_sets[MAIN_LAYER_SET][j+1]->name.c_str());
 	}
 
@@ -499,7 +499,7 @@ public:
 		str += "\n";
 		// print layer links
 		if (layer_graph.size() <= 0) return str;
-		
+
 		for (int j = 0; j < (int)layer_graph.size(); j++)
 		{
 			if (j % 3 == 0) str += "  ";
@@ -522,7 +522,7 @@ public:
 	//----------------------------------------------------------------------------------------------------------
 	// F O R W A R D
 	//
-	// the main forward pass 
+	// the main forward pass
 	// if calling over multiple threads, provide the thread index since the interal data is not otherwise thread safe
 	// train parameter is used to designate the forward pass is used in training (it turns on dropout layers, etc..)
 	float* forward(const float *in, int _thread_number=-1, int _train=0)
@@ -540,12 +540,12 @@ public:
 			layer->set_threading(_internal_thread_count);
 			layer->node.fill(0.f);
 		}
-		// first layer assumed input. copy input to it 
+		// first layer assumed input. copy input to it
 		const float *in_ptr = in;
 		//base_layer * layer = layer_sets[_thread_number][0];
 
 		//memcpy(layer->node.x, in, sizeof(float)*layer->node.size());
-		
+
 		__for__(auto layer __in__ inputs)
 		{
 			memcpy(layer->node.x, in_ptr, sizeof(float)*layer->node.size());
@@ -558,8 +558,8 @@ public:
 		{
 			// add bias and activate these outputs (they should all be summed up from other branches at this point)
 			//for(int j=0; j<layer->node.chans; j+=10) for (int i=0; i<layer->node.cols*layer->node.rows; i+=10)	std::cout<< layer->node.x[i+j*layer->node.chan_stride] <<"|";
-			layer->activate_nodes(); 
-			
+			layer->activate_nodes();
+
 			//for(int j=0; j<layer->node.chans; j++) for (int i=0; i<layer->node.cols*layer->node.rows; i+=10)	std::cout<< layer->node.x[i+j*layer->node.chan_stride] <<"|";
 			// send output signal downstream (note in this code 'top' is input layer, 'bottom' is output - bucking tradition
 			__for__ (auto &link __in__ layer->forward_linked_layers)
@@ -567,7 +567,7 @@ public:
 				// instead of having a list of paired connections, just use the shape of W to determine connections
 				// this is harder to read, but requires less look-ups
 				// the 'link' variable is a std::pair created during the connect() call for the layers
-				int connection_index = link.first; 
+				int connection_index = link.first;
 				base_layer *p_bottom = link.second;
 				// weight distribution of the signal to layers under it
 #ifdef MOJO_PROFILE_LAYERS
@@ -575,13 +575,13 @@ public:
 #endif
 				p_bottom->accumulate_signal(*layer, *W[connection_index], _train);
 				//if (p_bottom->has_weights())
-			//for(int j=0; j<layer->node.chans; j++) 
+			//for(int j=0; j<layer->node.chans; j++)
 			//int j=0;	for (int i=0; i<layer->node.cols*layer->node.rows; i+=10)	std::cout<< layer->node.x[i+j*layer->node.chan_stride] <<"|";
 
 #ifdef MOJO_PROFILE_LAYERS
 		std::cout << p_bottom->name << "\t" << GetCounter() << "ms\n";
 #endif
-			
+
 			}
 
 		}
@@ -610,7 +610,7 @@ public:
 //			if (dynamic_cast<dropout_layer*> (layer_sets[0][j]) != NULL)  ignore_cnt++;
 		ofs<<"mojo01" << std::endl;
 		ofs<<(int)(layer_cnt)<<std::endl;
-		
+
 		for(int j=0; j<(int)layer_sets[0].size(); j++)
 			ofs << layer_sets[MAIN_LAYER_SET][j]->name << std::endl << layer_sets[MAIN_LAYER_SET][j]->get_config_string();
 //			if (dynamic_cast<dropout_layer*> (layer_sets[0][j]) != NULL)
@@ -658,22 +658,22 @@ public:
 			}
 		}
 		ofs.flush();
-		
+
 		return true;
 	}
-	bool write(std::string &filename, bool binary = false, bool final = false) { 
+	bool write(std::string &filename, bool binary = false, bool final = false) {
 		std::ofstream temp((const char *)filename.c_str(), std::ios::binary);
 		return write(temp, binary, final);
 	}//, std::ofstream::binary);
 
-	bool write(char *filename, bool binary = false, bool final = false) 
+	bool write(char *filename, bool binary = false, bool final = false)
 	{
 		std::string str= filename;
-		return write(str, binary, final); 
+		return write(str, binary, final);
 	}
 
 	// read network from a file/stream
-	
+
 	std::string getcleanline(std::istream& ifs)
 	{
 		std::string s;
@@ -704,7 +704,7 @@ public:
 			}
 		}
 	}
-	
+
 	//----------------------------------------------------------------------------------------------------------
 	// R E A D
 	//
@@ -825,7 +825,7 @@ public:
 				}
 			}
 		}
-	
+
 		// copies batch=0 stuff to other batches
 		sync_layer_sets();
 
@@ -852,7 +852,7 @@ public:
 
 	// resets the state of all batches to 'free' state
 	void reset_mini_batch() { memset(batch_open.data(), BATCH_FREE, batch_open.size()); }
-	
+
 	// sets up number of mini batches (storage for sets of weight deltas)
 	void set_mini_batch_size(int batch_cnt)
 	{
@@ -860,10 +860,10 @@ public:
 		_batch_size = batch_cnt;
 		dW_sets.resize(_batch_size);
 		dbias_sets.resize(_batch_size);
-		batch_open.resize(_batch_size); 
+		batch_open.resize(_batch_size);
 		reset_mini_batch();
 	}
-	
+
 	int get_mini_batch_size() { return _batch_size; }
 
 	// return index of next free batch
@@ -881,14 +881,14 @@ public:
 		}
 		if (reserved>0) return BATCH_FILLED_IN_PROCESS; // all filled but wainting for reserves
 		if (filled == batch_open.size()) return BATCH_FILLED_COMPLETE; // all filled and complete
-		
+
 		bail("threading error"); // should not get here  unless threading problem
 	}
 
 	//----------------------------------------------------------------------------------------------------------
 	// s y n c   m i n i   b a t c h
 	//
-	// apply all weights to first set of dW, then apply to model weights 
+	// apply all weights to first set of dW, then apply to model weights
 	void sync_mini_batch()
 	{
 		// need to ensure no batches in progress (reserved)
@@ -899,7 +899,7 @@ public:
 
 		base_layer *layer;
 
-		 // sum contributions 
+		 // sum contributions
 		for (int k = layer_cnt - 1; k >= 0; k--)
 		{
 			layer = layer_sets[MAIN_LAYER_SET][k];
@@ -937,7 +937,7 @@ public:
 			layer->update_bias(dbias_sets[0][k], _solver->learning_rate);
 		}
 
-	
+
 		// prepare to start mini batch over
 		reset_mini_batch();
 		train_updates++; // could have no updates .. so this is not exact
@@ -986,11 +986,11 @@ public:
 	void set_max_epochs(int max_e) { if (max_e <= 0) max_e = 1; max_epochs = max_e; }
 	int get_epoch() { return epoch_count; }
 
-	// goal here is to update the weights W. 
+	// goal here is to update the weights W.
 	// use w_new = w_old - alpha dE/dw
 	// E = sum: 1/2*||y-target||^2
 	// note y = f(x*w)
-	// dE = (target-y)*dy/dw = (target-y)*df/dw = (target-y)*df/dx* dx/dw = (target-y) * df * y_prev  
+	// dE = (target-y)*dy/dw = (target-y)*df/dw = (target-y)*df/dx* dx/dw = (target-y) * df * y_prev
 	// similarly for cross entropy
 
 // ===========================================================================
@@ -1033,7 +1033,7 @@ public:
 		train_updates = 0;
 		train_samples = 0;
 		if (epoch_count == 0) reset_solver();
-	
+
 		// accuracy not improving .. slow learning
 		if(_smart_train &&  (best_accuracy_count > 4))
 		{
@@ -1053,11 +1053,11 @@ public:
 		//_skip_energy_level = 0.05;
 		_running_sum_E = 0;
 	}
-	
+
 	// time to stop?
 	bool elvis_left_the_building()
 	{
-		// 2 stuck x 4 non best accuracy to quit = 8 times no improvement 
+		// 2 stuck x 4 non best accuracy to quit = 8 times no improvement
 		if ((epoch_count>max_epochs) || (stuck_counter > 3)) return true;
 		else return false;
 	}
@@ -1069,7 +1069,7 @@ public:
 		sync_mini_batch();
 		epoch_count++;
 
-		// estimate accuracy of validation run 
+		// estimate accuracy of validation run
 		estimated_accuracy = 100.f*train_correct / train_samples;
 
 		if (train_correct > best_estimated_accuracy)
@@ -1097,7 +1097,7 @@ public:
 	void update_smart_train(const float E, bool correct)
 	{
 
-#ifdef MOJO_OMP	
+#ifdef MOJO_OMP
 #pragma omp critical
 #endif
 		{
@@ -1171,7 +1171,7 @@ public:
 		}
 
 
-		// update weights - shouldn't matter the direction we update these 
+		// update weights - shouldn't matter the direction we update these
 		// we can stay in backwards direction...
 		// it was not faster to combine distribute_delta and increment_w into the same loop
 		int size_W = (int)W.size();
@@ -1268,7 +1268,7 @@ public:
 
 
 	//----------------------------------------------------------------------------------------------------------
-	// T R A I N   C L A S S 
+	// T R A I N   C L A S S
 	//
 	// after starting epoch, call this to train against a class label
 	// label_index must be 0 to out_size()-1
@@ -1308,10 +1308,10 @@ public:
 				if ((rand() % 2) == 0)
 					m = m.flip_rows();
 			augmented_input = m.shift((rand() % (augment_x * 2 + 1)) - augment_x, (rand() % (augment_y * 2 + 1)) - augment_y, augment_pad);
-			
+
 			input = augmented_input.x;
 		}
-	
+
 
 //*/
 
@@ -1351,19 +1351,19 @@ public:
 		if(label_index>=0 && label_index<layer_node_size) target[label_index] = 1;
 
 		//const float grad_fudge = 1.0f;
-		// because of numerator/demoninator cancellations which prevent a divide by zero issue, 
+		// because of numerator/demoninator cancellations which prevent a divide by zero issue,
 		// we need to handle some things special on output layer
 		float cost_activation_type = 0;
 		if ((std::string("sigmoid").compare(layer->p_act->name) == 0) &&
-			(std::string("cross_entropy").compare(_cost_function->name) == 0)) 
+			(std::string("cross_entropy").compare(_cost_function->name) == 0))
 			cost_activation_type = 1;
 		else if ((std::string("softmax").compare(layer->p_act->name) == 0) &&
 			(std::string("cross_entropy").compare(_cost_function->name) == 0))
 			cost_activation_type = 1;
 		else if ((std::string("tanh").compare(layer->p_act->name) == 0) &&
-			(std::string("cross_entropy").compare(_cost_function->name) == 0)) 
+			(std::string("cross_entropy").compare(_cost_function->name) == 0))
 			cost_activation_type = 4;
-	
+
 		for (int j = 0; j < layer_node_size; j++)
 		{
 			if(cost_activation_type>0)
@@ -1373,16 +1373,16 @@ public:
 
 			// pick best response
 			if (layer->node.x[max_j_out] < layer->node.x[j]) max_j_out = j;
-			// for better E maybe just look at 2 highest scores so zeros don't dominate 
+			// for better E maybe just look at 2 highest scores so zeros don't dominate
 
 			float f= mse::cost(layer->node.x[j], target[j]);
 			E += f;//mse::cost(layer->node.x[j], target[j]);
 		}
-	
+
 		E /= (float)layer_node_size;
 		// check for NAN
 		if (E != E) bail("network blew up - try lowering learning rate\n");
-		
+
 		// critical section in here, blocking update
 		bool match = false;
 		if ((max_j_target == max_j_out)) match = true;
@@ -1398,9 +1398,9 @@ public:
 		backward_hidden(my_batch_index, thread_number);
 		return true;
 	}
-	
+
 	//----------------------------------------------------------------------------------------------------------
-	// T R A I N   T A R G E T 
+	// T R A I N   T A R G E T
 	//
 	// after starting epoch, call this to train against a target vector
 	// for thread safety, you must pass in the thread_index if calling from different threads
@@ -1453,7 +1453,7 @@ public:
 //		if (label_index >= 0 && label_index<layer_node_size) target[label_index] = 1;
 
 		const float grad_fudge = 1.0f;
-		// because of numerator/demoninator cancellations which prevent a divide by zero issue, 
+		// because of numerator/demoninator cancellations which prevent a divide by zero issue,
 		// we need to handle some things special on output layer
 		float cost_activation_type = 0;
 		if ((std::string("sigmoid").compare(layer->p_act->name) == 0) &&
@@ -1484,7 +1484,7 @@ public:
 			}
 			// pick best response
 			if (layer->node.x[max_j_out] < layer->node.x[j]) max_j_out = j;
-			// for better E maybe just look at 2 highest scores so zeros don't dominate 
+			// for better E maybe just look at 2 highest scores so zeros don't dominate
 
 			// L2 distance x 2
 			E += mse::cost(layer->node.x[j], target[j]);

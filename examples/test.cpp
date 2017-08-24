@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -25,7 +25,7 @@
 // ============================================================================
 //    test.cpp:  Simple example using pre-trained model to test mojo cnn
 //
-//    Instructions: 
+//    Instructions:
 //	  Add the "mojo" folder in your include path.
 //    Download MNIST data and unzip locally on your machine:
 //		(http://yann.lecun.com/exdb/mnist/index.html)
@@ -66,10 +66,10 @@ void test(mojo::network &cnn, const std::vector<std::vector<float>> &test_images
 
 	const int record_cnt= (int)test_images.size();
 
-	// when MOJO_OMP is defined, we use standard "omp parallel for" loop, 
+	// when MOJO_OMP is defined, we use standard "omp parallel for" loop,
 	// the number of threads determined by network.enable_external_threads() call
 	#pragma omp parallel for reduction(+:correct_predictions) schedule(dynamic)  // dynamic schedule just helps the progress class to work correcly
-	for(int k=0; k<record_cnt; k++) 
+	for(int k=0; k<record_cnt; k++)
 	{
 		// predict_class returnes the output index of the highest response
 		const int prediction=cnn.predict_class(test_images[k].data());
@@ -89,17 +89,17 @@ int main()
 	// == parse data
 	// array to hold image data (note that mojo does not require use of std::vector)
 	std::vector<std::vector<float>> test_images;
-	// array to hold image labels 
+	// array to hold image labels
 	std::vector<int> test_labels;
 	// calls MNIST::parse_test_data  or  CIFAR10::parse_test_data depending on 'using'
 	if(!parse_test_data(data_path, test_images, test_labels)) {std::cerr << "error: could not parse data.\n"; return 1;}
 
-	// == setup the network  
-	mojo::network cnn; 
+	// == setup the network
+	mojo::network cnn;
 
 	// here we need to prepare mojo cnn to store data from multiple threads
 	// !! enable_external_threads must be set prior to loading or creating a model !!
-	cnn.enable_external_threads(); 
+	cnn.enable_external_threads();
 
 	// load model
 	if(!cnn.read(model_file)) {std::cerr << "error: could not read model.\n"; return 1;}
@@ -109,7 +109,7 @@ int main()
 	// == run the test
 	std::cout << "Testing " << data_name() << ":" << std::endl;
 	// this function will loop through all images, call predict, and print out stats
-	test(cnn, test_images, test_labels);	
+	test(cnn, test_images, test_labels);
 
 	std::cout << std::endl;
 	return 0;

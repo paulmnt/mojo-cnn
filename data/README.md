@@ -1,4 +1,4 @@
-Examples use MNIST and CIFAR-10 from these folders. 
+Examples use MNIST and CIFAR-10 from these folders.
 
 Download MNIST data and unzip locally on your machine:
 [http://yann.lecun.com/exdb/mnist/index.html](http://yann.lecun.com/exdb/mnist/index.html)

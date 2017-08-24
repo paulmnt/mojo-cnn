@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -25,7 +25,7 @@
 // ============================================================================
 //    train_cifar.cpp:  train cifar-10 classifier
 //
-//    Instructions: 
+//    Instructions:
 //	  Add the "mojo" folder in your include path.
 //    Download MNIST data and unzip locally on your machine:
 //		(http://yann.lecun.com/exdb/mnist/index.html)
@@ -40,7 +40,7 @@
 #include <tchar.h>
 
 //#define MOJO_CV3
-#include <mojo.h>  
+#include <mojo.h>
 #include <util.h>
 #include "cifar_parser.h"
 
@@ -74,7 +74,7 @@ float test(mojo::network &cnn, const std::vector<std::vector<float>> &test_image
 
 void remove_cifar_mean(std::vector<std::vector<float>> &train_images, std::vector<std::vector<float>> &test_images)
 {
-	// calculate the mean for every pixel position 
+	// calculate the mean for every pixel position
 	mojo::matrix mean(32, 32, 3);
 	mean.fill(0);
 	for (int i = 0; i < train_images.size(); i++) mean += mojo::matrix(32, 32, 3, train_images[i].data());
@@ -120,14 +120,14 @@ int main()
 	// augment data random shifts only +/-2 pix
 	cnn.set_random_augmentation(2,2,0,0,mojo::edge);
 
-	// configure network 
+	// configure network
 	cnn.push_back("I1", "input 32 32 3");				// CIFAR is 32x32x3
 	cnn.push_back("C1", "convolution 3 16 1 elu");		// 32-3+1=30
 	cnn.push_back("P1", "semi_stochastic_pool 3 3");	// 10x10 out
 	cnn.push_back("C2", "convolution 3 64 1 elu");		// 8x8 out
 	cnn.push_back("P2", "semi_stochastic_pool 4 4");	// 2x2 out
 	cnn.push_back("FC2", "softmax 10");
-	
+
 	// connect all the layers. Call connect() manually for all layer connections if you need more exotic networks.
 	cnn.connect_all();
 	std::cout << "==  Network Configuration  ====================================================" << std::endl;

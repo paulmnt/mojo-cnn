@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -102,12 +102,12 @@ namespace mojo {
 #endif
 
 // not using class because I thought this may be faster than vptrs
-namespace tan_h 
+namespace tan_h
 {
 #ifndef MOJO_LUTS
 	inline void f(float *in, const int size, const float *bias) // this is activation f(x)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
 			const float ep = std::exp((in[i]+bias[i]));
 			const float em = std::exp(-(in[i] + bias[i]));
@@ -116,7 +116,7 @@ namespace tan_h
     }
 	inline void fc(float *in, const int size, const float bias) // this is activation f(x)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
 			const float ep = std::exp((in[i]+bias));
 			const float em = std::exp(-(in[i] + bias));
@@ -126,17 +126,17 @@ namespace tan_h
 #else
 	inline void  f(float *in, const int size, const float *bias) // this is activation f(x)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
 			const int index = (int)((in[i] + bias[i]) * 64.0 + 512.);
 			if (index >= 1024) return 1.f; // iff exceed max index size
 			else if (index<0) return -1.f; // or below min index 0
 			in[i]= tanh_lut[index];
 		}
-	}	
+	}
 	inline void  fc(float *in, const int size, const float bias) // this is activation f(x)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
 			const int index = (int)((in[i] + bias) * 64.0 + 512.);
 			if (index >= 1024) return 1.f; // iff exceed max index size
@@ -144,101 +144,101 @@ namespace tan_h
 			in[i]= tanh_lut[index];
 		}
 	}
-#endif // MOJO_LUTS	
-	inline float  df(float *in, int i, const int size) { return (1.f - in[i]*in[i]); }  // this is df(x), but we pass in the activated value f(x) and not x 
+#endif // MOJO_LUTS
+	inline float  df(float *in, int i, const int size) { return (1.f - in[i]*in[i]); }  // this is df(x), but we pass in the activated value f(x) and not x
 	const char name[]="tanh";
 }
 
-namespace elu 
+namespace elu
 {
-	inline void  f(float *in, const int size, const float *bias) 
-	{ 
-		for(int i=0; i<size; i++) 
+	inline void  f(float *in, const int size, const float *bias)
+	{
+		for(int i=0; i<size; i++)
 		{
 			if((in[i] + bias[i]) < 0) in[i]= 0.1f*(std::exp((in[i] + bias[i])) - 1.f);
 			else in[i]=(in[i] + bias[i]);
-		} 
-		
+		}
+
 	}
-	inline void  fc(float *in, const int size, const float bias) 
-	{ 
-		for(int i=0; i<size; i++) 
+	inline void  fc(float *in, const int size, const float bias)
+	{
+		for(int i=0; i<size; i++)
 		{
 			if((in[i] + bias) < 0) in[i]= 0.1f*(std::exp((in[i] + bias)) - 1.f);
 			else in[i]=(in[i] + bias);
-		} 
-		
+		}
+
 	}	inline float  df(float *in, int i, const int size) { if(in[i] > 0) return 1.f; else return 0.1f*std::exp(in[i]);}
 	const char name[]="elu";
 }
 
-namespace identity 
+namespace identity
 {
-	inline void  f(float *in, const int size, const float *bias) 
+	inline void  f(float *in, const int size, const float *bias)
 	{
-		for(int i=0; i<size; i++) in[i]=(in[i] + bias[i]); 
+		for(int i=0; i<size; i++) in[i]=(in[i] + bias[i]);
 	}
-	inline void  fc(float *in, const int size, const float bias) 
+	inline void  fc(float *in, const int size, const float bias)
 	{
-		for(int i=0; i<size; i++) in[i]=(in[i] + bias); 
+		for(int i=0; i<size; i++) in[i]=(in[i] + bias);
 	}
 	inline float  df(float *in, int i, const int size){return 1.f;};
 	const char name[]="identity";
 }
-namespace relu 
+namespace relu
 {
-	inline void  f(float *in, const int size, const float *bias) 
+	inline void  f(float *in, const int size, const float *bias)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
-			if((in[i] + bias[i]) < 0) in[i]= 0; 
+			if((in[i] + bias[i]) < 0) in[i]= 0;
 			else in[i]=(in[i] + bias[i]);
-		} 
+		}
 	}
-	inline void  fc(float *in, const int size, const float bias) 
+	inline void  fc(float *in, const int size, const float bias)
 	{
-		for(int i=0; i<size; i++) 
+		for(int i=0; i<size; i++)
 		{
-			if((in[i] + bias) < 0) in[i]= 0; 
+			if((in[i] + bias) < 0) in[i]= 0;
 			else in[i]=(in[i] + bias);
-		} 
+		}
 	}	inline float  df(float *in, int i, const int size) {if(in[i] > 0) return 1.0f; else return 0.0f; }
 	const char name[]="relu";
 };
-namespace lrelu 
+namespace lrelu
 {
 	inline void  f(float *in, const int size, const float *bias)
 	{
 		for(int i=0; i<size; i++) {
-			if((in[i] + bias[i]) < 0) in[i]= 0.01f*(in[i] + bias[i]); 
+			if((in[i] + bias[i]) < 0) in[i]= 0.01f*(in[i] + bias[i]);
 			else in[i]=(in[i] + bias[i]);
-		} 
+		}
 	}
 	inline void  fc(float *in, const int size, const float bias)
 	{
 		for(int i=0; i<size; i++) {
-			if((in[i] + bias) < 0) in[i]= 0.01f*(in[i] + bias); 
+			if((in[i] + bias) < 0) in[i]= 0.01f*(in[i] + bias);
 			else in[i]=(in[i] + bias);
-		} 
+		}
 	}
 	inline float  df(float *in, int i, const int size) {if(in[i] > 0) return 1.0f; else return 0.01f; }
 	const char name[]="lrelu";
 };
-namespace vlrelu 
+namespace vlrelu
 {
-	inline void  f(float *in, const int size, const float *bias) 
+	inline void  f(float *in, const int size, const float *bias)
 	{
 		for(int i=0; i<size; i++) {
-			if((in[i] + bias[i]) < 0) in[i]= 0.33f*(in[i] + bias[i]); 
+			if((in[i] + bias[i]) < 0) in[i]= 0.33f*(in[i] + bias[i]);
 			else in[i]=(in[i] + bias[i]);
-		} 
+		}
 	}
-	inline void  fc(float *in, const int size, const float bias) 
+	inline void  fc(float *in, const int size, const float bias)
 	{
 		for(int i=0; i<size; i++) {
-			if((in[i] + bias) < 0) in[i]= 0.33f*(in[i] + bias); 
+			if((in[i] + bias) < 0) in[i]= 0.33f*(in[i] + bias);
 			else in[i]=(in[i] + bias);
-		} 
+		}
 	}
 	inline float  df(float *in, int i, const int size) {if(in[i] > 0) return 1.0f; else return 0.33f; }
 	const char name[]="vlrelu";
@@ -246,12 +246,12 @@ namespace vlrelu
 
 namespace sigmoid
 {
-	inline void  f(float *in, const int size, const float *bias) 
-	{ 
+	inline void  f(float *in, const int size, const float *bias)
+	{
 		for(int i=0; i<size; i++)  in[i]=1.0f/(1.0f+exp(-(in[i] + bias[i])));
 	}
-	inline void  fc(float *in, const int size, const float bias) 
-	{ 
+	inline void  fc(float *in, const int size, const float bias)
+	{
 		for(int i=0; i<size; i++)  in[i]=1.0f/(1.0f+exp(-(in[i] + bias)));
 	}
 	inline float df(float *in, int i, const int size) {return in[i]*(1.f-in[i]); }
@@ -285,7 +285,7 @@ namespace softmax
 	{
 		// don't really use... should use good cost func to make this go away
 		return in[i] * (1.f - in[i]);
-		//		for(int j=0; j<size; j++) 
+		//		for(int j=0; j<size; j++)
 		//		{
 		//			if(i==j) in[i]= in[i] * (1.f - in[i]);
 		//			else in[i] = in[i]*in[j];
@@ -326,7 +326,7 @@ namespace brokemax
 	{
 		// don't really use... should use good cost func to make this go away
 		return in[i] * (1.f - in[i]);
-		//		for(int j=0; j<size; j++) 
+		//		for(int j=0; j<size; j++)
 		//		{
 		//			if(i==j) in[i]= in[i] * (1.f - in[i]);
 		//			else in[i] = in[i]*in[j];
@@ -343,7 +343,7 @@ namespace none
 	const char name[]="none";
 };
 
-typedef struct 
+typedef struct
 {
 public:
 	void (*f)(float *, const int, const float*);

@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -65,7 +65,7 @@ public:
 	// bottom is the number of grads coming up from the lower layer
 	// top is the current output node value of the upper layer
 	virtual void increment_w(matrix *w,  int g, const matrix &dW, const float custom_factor=1.0f){}//, matrix *top){}
-	virtual void push_back(int w, int h, int c){}	
+	virtual void push_back(int w, int h, int c){}
 };
 
 #ifndef MOJO_NO_TRAINING
@@ -80,7 +80,7 @@ public:
 	{
 		const float w_decay=0.01f;//1;
 		const float lr=custom_factor*learning_rate;
-		for(int s=0; s<w->size(); s++)	
+		for(int s=0; s<w->size(); s++)
 			w->x[s] -= lr*(dW.x[s] + w_decay*w->x[s]);
 	}
 };
@@ -97,7 +97,7 @@ public:
 		G1.push_back(new matrix(w, h, c));
 	}// G1[G1.size() - 1]->fill(0);
 
-	
+
 	virtual void reset() { __for__(auto g __in__ G1) g->fill(0.f);}
 	virtual void increment_w(matrix *w,  int g, const matrix &dW, const float custom_factor = 1.0f)
 	{
@@ -108,12 +108,12 @@ public:
 		const float eps = 1.e-8f;
 		// if (G1[g]->size() != w->size()) throw;
 		const float lr = custom_factor*learning_rate;
-		for(int s=0; s<w->size(); s++) 
+		for(int s=0; s<w->size(); s++)
 		{
 			g1[s] += dW.x[s] * dW.x[s];
 			//if (g1[s] < 1) throw;
 			w->x[s] -= lr*dW.x[s]/(std::sqrt(g1[s]) + eps);
-		}	
+		}
 	};
 };
 
@@ -138,7 +138,7 @@ public:
 		{
 			g1[s] = mu * g1[s]+(1-mu) * dW.x[s] * dW.x[s];
 			w->x[s] -= lr*dW.x[s]/(std::sqrt(g1[s]) + eps);
-		}	
+		}
 	};
 
 };
@@ -164,7 +164,7 @@ public:
 
 	virtual void push_back(int w, int h, int c)
 	{
-		G1.push_back(new matrix(w,h,c)); G1[G1.size() - 1]->fill(0); 
+		G1.push_back(new matrix(w,h,c)); G1[G1.size() - 1]->fill(0);
 		G2.push_back(new matrix(w,h,c)); G2[G2.size() - 1]->fill(0);
 	}
 
@@ -180,7 +180,7 @@ public:
 				g1[s] = b1* g1[s]+(1-b1) * dW.x[s];
 				g2[s] = b2* g2[s]+(1-b2) * dW.x[s]*dW.x[s];
 				w->x[s] -= lr* (g1[s]/(1.f-b1_t)) / ((float)std::sqrt(g2[s]/(1.-b2_t)) + eps);
-			}	
+			}
 	};
 
 };

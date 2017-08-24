@@ -3,16 +3,16 @@ CFLAGS_OMP= -I../mojo/ -std=c++11 -fopenmp -O3 -DMOJO_OPM -DMOJO_AVX -msse4 -mav
 
 all: test train_mnist train_cifar vgg
 
-test: test.cpp 
+test: test.cpp
 	$(CC) $(CFLAGS_OMP) test.cpp -o test
 
 train_mnist: train_mnist.cpp
 	$(CC) $(CFLAGS_OMP) train_mnist.cpp -o train_mnist
 
-train_cifar: train_cifar.cpp 
+train_cifar: train_cifar.cpp
 	$(CC) $(CFLAGS_OMP) train_cifar.cpp -o train_cifar
 
-vgg: vgg.cpp 
+vgg: vgg.cpp
 	$(CC) $(CFLAGS_OMP) vgg.cpp -o vgg
 
 clean:

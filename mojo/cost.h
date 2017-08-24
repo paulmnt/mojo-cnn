@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -35,21 +35,21 @@
 
 namespace mojo {
 
-namespace mse 
+namespace mse
 {
 	inline float  cost(float out, float target) {return 0.5f*(out-target)*(out-target);};
 	inline float  d_cost(float out, float target) {return (out-target);};
 	const char name[]="mse";
 }
 /*
-namespace triplet_loss 
+namespace triplet_loss
 {
 	inline float  E(float out1, float out2, float out3) {return 0.5f*(out-target)*(out-target);};
 	inline float  dE(float out, float target) {return (out-target);};
 	const char name[]="triplet_loss";
 }
 */
-namespace cross_entropy 
+namespace cross_entropy
 {
 	inline float  cost(float out, float target) {return (-target * std::log(out) - (1.f - target) * std::log(1.f - out));};
 	inline float  d_cost(float out, float target) {return ((out - target) / (out*(1.f - out)));};
@@ -57,7 +57,7 @@ namespace cross_entropy
 }
 
 
-typedef struct 
+typedef struct
 {
 public:
 	float (*cost)(float, float);

@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -67,7 +67,7 @@ namespace mojo
 // B A S E   L A Y E R
 //
 // all other layers derived from this
-class base_layer 
+class base_layer
 {
 protected:
 	bool _has_weights;
@@ -77,7 +77,7 @@ protected:
 
 public:
 	activation_function *p_act;
-	
+
 	bool has_weights() {return _has_weights;}
 	bool use_bias() { return _use_bias; }
 	void set_learning_factor(float f=1.0f) {_learning_factor = 1.f;}
@@ -86,7 +86,7 @@ public:
 	int pad_cols, pad_rows;
 	matrix node;
 	matrix bias; // this is something that maybe should be in the same class as the weights... but whatever. handled differently for different layers
-	
+
 	std::string name;
 	// index of W matrix, index of connected layer
 	std::vector<std::pair<int,base_layer*>> forward_linked_layers;
@@ -117,7 +117,7 @@ public:
 		delta =matrix(_w,_h,_c,NULL,false);
 		#endif
 	}
-	
+
 	virtual ~base_layer(){if(p_act) delete p_act;}
 	virtual int fan_size() {return node.chans*node.rows*node.cols;}
 
@@ -126,7 +126,7 @@ public:
 		if (p_act)
 		{
 			if(_use_bias)
-				//for (int c=0; c<node.chans; c++) 
+				//for (int c=0; c<node.chans; c++)
 				{
 					//const float b = bias.x[c];
 					//float *x= &node.x[c*node.chan_stride];
@@ -150,12 +150,12 @@ public:
 			return new matrix(cols, rows, 1);
 		}
 		else
-			return NULL;	
+			return NULL;
 	}
 
 	//inline float f(float *in, int i, int size, float bias) {return p_act->f(in, i, size, bias);};
 	inline float df(float *in, int i, int size) { if (p_act) return p_act->df(in, i, size); else return 1.f; };
-	virtual std::string get_config_string() =0;	
+	virtual std::string get_config_string() =0;
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -181,9 +181,9 @@ public:
 class fully_connected_layer : public base_layer
 {
 public:
-	fully_connected_layer(const char *layer_name, int _size, activation_function *p) : base_layer(layer_name, _size, 1, 1) 
+	fully_connected_layer(const char *layer_name, int _size, activation_function *p) : base_layer(layer_name, _size, 1, 1)
 	{
-		p_act = p; _use_bias = true;	
+		p_act = p; _use_bias = true;
 		bias = matrix(node.cols, node.rows, node.chans);
 		bias.fill(0.);
 
@@ -198,16 +198,16 @@ public:
 		const int ts = top.node.size();
 		const int ts2 = top.node.cols*top.node.rows;
 
-		// this can be sped up a little with SSE. 
+		// this can be sped up a little with SSE.
 		if(top.node.chan_stride!=ts2)
 		{
 			//std::cout << "here: " << top.node.chan_stride << ","<< ts2 << ","<< top.node.chans << ":";
 			MOJO_THREAD_THIS_LOOP(_thread_count)
-			for (int j = 0; j < s; j++)  
+			for (int j = 0; j < s; j++)
 			{
-				for (int i = 0; i < top.node.chans; i++) 
+				for (int i = 0; i < top.node.chans; i++)
 				{
-					node.x[j] += dot(top.node.x+top.node.chan_stride*i, w.x+j*w.cols+ts2*i, ts2);  
+					node.x[j] += dot(top.node.x+top.node.chan_stride*i, w.x+j*w.cols+ts2*i, ts2);
 					//float *f=top.node.x+top.node.chan_stride*i;
 					//if(node.x[j]!=node.x[j])
 					if(node.x[j]!=node.x[j])
@@ -217,7 +217,7 @@ public:
 						{
 							std::cout << k<< ","<< top.node.x[k] <<",";
 						}
-						
+
 						exit(1);
 					}
 				}
@@ -226,7 +226,7 @@ public:
 		else
 		{
 		MOJO_THREAD_THIS_LOOP(_thread_count)
-		for (int j = 0; j < s; j++)  node.x[j] += dot(top.node.x, w.x+j*w.cols, ts);  
+		for (int j = 0; j < s; j++)  node.x[j] += dot(top.node.x, w.x+j*w.cols, ts);
 		}
 	}
 #ifndef MOJO_NO_TRAINING
@@ -241,7 +241,7 @@ public:
 			for (int b = 0; b < delta.size(); b++)
 			{
 				const float cb = delta.x[b];
-				for (int t = 0; t < top.delta.size(); t++) 
+				for (int t = 0; t < top.delta.size(); t++)
 					top.delta.x[t] += cb*w.x[t + b*w_cols];
 			}
 		}
@@ -253,13 +253,13 @@ public:
 			for (int b = 0; b < delta.size(); b++)
 			{
 				const float cb = delta.x[b];
-				for (int tc = 0; tc < top.delta.chans; tc++)	
-					for (int t = 0; t < chan_size; t++)	
+				for (int tc = 0; tc < top.delta.chans; tc++)
+					for (int t = 0; t < chan_size; t++)
 							top.delta.x[t+tc*top.delta.chan_stride] += cb*w.x[t + tc*chan_size + b*w_cols];
 			}
 
-				 
-			
+
+
 		}
 
 
@@ -278,13 +278,13 @@ public:
 			if(sizet!=top_layer.node.size())
 			{
 				//std::cout << "calculate_dw - odd size";
-				for (int tc = 0; tc < top_layer.node.chans; tc++)	
-					for (int t = 0; t < chan_size; t++)	
+				for (int tc = 0; tc < top_layer.node.chans; tc++)
+					for (int t = 0; t < chan_size; t++)
 					{
 						dw.x[t+tc*chan_size + b*sizet] = top[t+tc*top_layer.node.chan_stride] * cb;
 						//std::cout << dw.x[t+tc*chan_size + b*sizet] <<",";
 					}
-				 
+
 			}
 			else
 			{
@@ -297,8 +297,8 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------
-// M A X   P O O L I N G   
-// 
+// M A X   P O O L I N G
+//
 // may split to max and ave pool class derived from pooling layer.. but i never use ave pool anymore
 class max_pooling_layer : public base_layer
 {
@@ -330,7 +330,7 @@ public:
 		_max_map.resize(_w*_h*_c);
 		base_layer::resize(_w, _h, _c);
 	}
-	// no weights 
+	// no weights
 	virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train =1) {}
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
@@ -418,7 +418,7 @@ public:
 						if(max<n[2]) { max = n[2]; max_i=base_index+3*jstep+2;}
 						if(max<n[3]) { max = n[3]; max_i=base_index+3*jstep+3;}
 					}
-					else	
+					else
 					{
 						// speed up with optimized size version
 						for(int jj=0; jj<pool_y; jj+= 1)
@@ -442,7 +442,7 @@ public:
 					node.x[output_index] = top_node[max_i];
 					p_map[output_index] = max_i;
 					output_index++;
-					
+
 				}
 			}
 		}
@@ -460,13 +460,13 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------
-// S E M I   S T O C H A S T I C   P O O L I N G   
+// S E M I   S T O C H A S T I C   P O O L I N G
 // concept similar to stochastic pooling but only slects 'max' based on top 2 candidates
 class semi_stochastic_pooling_layer :  public max_pooling_layer
 {
 public:
 	semi_stochastic_pooling_layer(const char *layer_name, int pool_size) : max_pooling_layer(layer_name, pool_size) {}
-	
+
 	semi_stochastic_pooling_layer(const char *layer_name, int pool_size, int stride) : max_pooling_layer(layer_name, pool_size, stride){}
 
 	virtual std::string get_config_string() { std::string str = "semi_stochastic_pool " + int2str(_pool_size) + " " + int2str(_stride) + "\n"; return str; }
@@ -519,7 +519,7 @@ public:
 
 					int r = rand() % 100;
 					float denom = (max + max2);
-					
+
 					if (denom == 0)
 					{
 						node.x[output_index] = top_node[max_i];
@@ -549,7 +549,7 @@ public:
 
 //----------------------------------------------------------------------------------------------------------
 // D R O P   O U T
-// 
+//
 class dropout_layer : public base_layer
 {
 	float _dropout_rate;
@@ -571,7 +571,7 @@ public:
 		base_layer::resize(_w, _h, _c);
 	}
 
-	// no weights 
+	// no weights
 	virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train = 1) {}
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
@@ -581,7 +581,7 @@ public:
 
 	// for dropout...
 	// we know this is called first in the backward pass, and the train will be set to 1
-	// when that happens the dropouts will be set. 
+	// when that happens the dropouts will be set.
 	// different dropouts for each mininbatch... don't know if that matters...
 	virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
 	{
@@ -622,7 +622,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------
-// M F M   -  M a x F e a t u r e M a p 
+// M F M   -  M a x F e a t u r e M a p
 // (A Lightened CNN for Deep Face Representation) http://arxiv.org/pdf/1511.02683.pdf
 // the parameter passed in is the number of maps pooled
 class maxout_layer : public base_layer
@@ -647,13 +647,13 @@ public:
 		base_layer::resize(_w, _h, _c);
 	}
 
-	inline float df(float *in, int i, int size) 
+	inline float df(float *in, int i, int size)
 	{
 		return 1.;
 	};
 
 	virtual void activate_nodes() { return; }
-	// no weights 
+	// no weights
 	virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train = 1) {}
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
@@ -672,7 +672,7 @@ public:
 
 	// for maxout
 	// we know this is called first in the backward pass, and the train will be set to 1
-	// when that happens the dropouts will be set. 
+	// when that happens the dropouts will be set.
 	// different dropouts for each mininbatch... don't know if that matters...
 	virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
 	{
@@ -681,9 +681,9 @@ public:
 		//const int pool_offset = top.node.chans / _pool;
 		const int s = chan_size*top.node.chans / _pool;
 
-		if((top.node.chans % _pool) !=0) 
+		if((top.node.chans % _pool) !=0)
 			bail("mfm layer has pool size that is not a multiple of the input channels");
-		
+
 		for (int i = 0; i < s; i++)
 				{
 			float max = top.node.x[i];
@@ -726,7 +726,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------
-// C O N V O L U T I O N   
+// C O N V O L U T I O N
 //
 class convolution_layer : public base_layer
 {
@@ -739,7 +739,7 @@ public:
 	int kernels_per_map;
 
 
-	convolution_layer(const char *layer_name, int _w, int _c, int _s, activation_function *p ) : base_layer(layer_name, _w, _w, _c) 
+	convolution_layer(const char *layer_name, int _w, int _c, int _s, activation_function *p ) : base_layer(layer_name, _w, _w, _c)
 	{
 		p_act=p; _stride =_s; kernel_rows=_w; kernel_cols=_w; maps=_c;kernels_per_map=0; pad_cols = kernel_cols-1; pad_rows = kernel_rows-1;
 		_use_bias = true;
@@ -747,10 +747,10 @@ public:
 	virtual  ~convolution_layer() {
 	}
 	virtual std::string get_config_string() {std::string str="convolution "+int2str(kernel_cols)+" "+int2str(maps)+" " + int2str(_stride) + " " +p_act->name+"\n"; return str;}
-	
+
 	virtual int fan_size() { return kernel_rows*kernel_cols*maps *kernels_per_map; }
 
-	
+
 	virtual void resize(int _w, int _h=1, int _c=1) // special resize nodes because bias handled differently with shared wts
 	{
 		if(kernel_rows*kernel_cols==1) node =matrix(_w,_h,_c);  /// use special channel aligned matrix object
@@ -781,23 +781,23 @@ public:
 
 	// activate_nodes
 	virtual void activate_nodes()
-	{ 
+	{
 		const int map_size = node.rows*node.cols;
 		const int map_stride = node.chan_stride;
 		const int _maps = maps;
 
 		MOJO_THREAD_THIS_LOOP(_thread_count)
-		for (int c=0; c<_maps; c++) 
+		for (int c=0; c<_maps; c++)
 		{
 			p_act->fc(&node.x[c*map_stride],map_size,bias.x[c]);
 			//if(node.x[c*map_stride]!=node.x[c*map_stride]) bail("activate");
-			
+
 		}
 	}
 
 
 	virtual void accumulate_signal( const base_layer &top, const matrix &w, const int train =0)
-	{	
+	{
 		const int kstep = top.node.chan_stride;// NOT the same as top.node.cols*top.node.rows;
 		const int jstep=top.node.cols;
 		//int output_index=0;
@@ -810,7 +810,7 @@ public:
 		const int top_chans = top.node.chans;
 		const int map_cnt=maps;
 		const int w_size = kernel_cols;
-		const int stride = _stride;		
+		const int stride = _stride;
 		const int node_size= node.cols;
 		const int top_node_size = top.node.cols;
 		const int outsize = node_size*node_size;
@@ -852,7 +852,7 @@ public:
 				const float *_top_node = &top.node.x[k*kstep];
 
 				//MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
-				for (int map = 0; map < map_cnt; map++) 
+				for (int map = 0; map < map_cnt; map++)
 				{
 					const float cw = w.x[(map + k*maps)*kernel_size];
 					const int mapoff = map_size*map;
@@ -867,19 +867,19 @@ public:
 				for(int k=0; k<top_chans; k++) // input channels --- same as kernels_per_map - kern for each input
 				{
 					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
-					for(int j=0; j<node_size; j+= stride) // input h 
+					for(int j=0; j<node_size; j+= stride) // input h
  						for(int i=0; i<node_size; i+= stride) // intput w
-							node.x[i+(j)*node.cols +map_stride*map]+= 
+							node.x[i+(j)*node.cols +map_stride*map]+=
 								unwrap_2d_dot(
 									&top.node.x[(i)+(j)*jstep + k*kstep],
 									&w.x[(map+k*maps)*kernel_size],
 									kernel_cols,
 									jstep,kernel_cols);
-					
+
 				} // k
 			} // all maps=chans
-		} 
-			
+		}
+
 	}
 
 
@@ -888,7 +888,7 @@ public:
 	// convolution::distribute_delta
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train=1)
 	{
-		
+
 		// here to calculate top_delta += bottom_delta * W
 //		top_delta.x[s] += bottom_delta.x[t]*w.x[s+t*w.cols];
 		matrix delta_pad(delta, pad_cols, pad_rows);
@@ -912,13 +912,13 @@ public:
 		const int stride = _stride;
 
 		matrix delt(top.delta.cols, top.delta.rows, top.delta.chans,NULL,true);
-		
+
 		if (kernel_cols == 5)
 		{
 			//*
 					matrix img_ptr(delta_size, delta_size, 25, NULL, true);
 					matrix filter_ptr(28, 1);
-					
+
 					//matrix imgout_ptr(outsize + 7, 1);
 					for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
 					{
@@ -967,7 +967,7 @@ public:
 		{
 					matrix img_ptr(delta_size, delta_size, 9, NULL, true);
 					matrix filter_ptr(9, 1);
-					
+
 					//matrix imgout_ptr(outsize + 7, 1);
 					for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
 					{
@@ -1014,7 +1014,7 @@ public:
 		}
 		else if (kernel_cols == 1)
 		{
-			for (int j = 0; j<top.delta.rows; j += stride) // input h 
+			for (int j = 0; j<top.delta.rows; j += stride) // input h
 			{
 				for (int i = 0; i<top.delta.cols; i += stride) // intput w
 				{
@@ -1030,7 +1030,7 @@ public:
 							wx += kernel_size;
 
 						} // all input chans
-						  //output_index++;	
+						  //output_index++;
 					}
 				}
 			} //y
@@ -1038,7 +1038,7 @@ public:
 		else
 		{
 
-			for(int j=0; j<top.delta.rows; j+=stride) // input h 
+			for(int j=0; j<top.delta.rows; j+=stride) // input h
 			{
 				for(int i=0; i<top.delta.cols; i+=stride) // intput w
 				{
@@ -1048,18 +1048,18 @@ public:
 						for(int map=0; map<maps; map++) // how many maps  maps= node.chans
 						{
 							top.delta.x[td_i] += unwrap_2d_dot_rot180(
-								&delta_pad.x[i+(j)*delta_pad.cols + map*map_stride], 
+								&delta_pad.x[i+(j)*delta_pad.cols + map*map_stride],
 								&w.x[(map+k*maps)*kernel_size],
 								kernel_cols,
 								delta_pad.cols,kernel_cols);
 
 						} // all input chans
-						//output_index++;	
-					} 
+						//output_index++;
+					}
 				}
 			} //y
-	
-		} // all maps=chans 
+
+		} // all maps=chans
 
 	}
 
@@ -1077,7 +1077,7 @@ public:
 
 		dw.resize(kernel_cols, kernel_rows,kernels_per_map*maps);
 		dw.fill(0);
-		
+
 		// node x already init to 0
 		output_index=0;
 		const int stride = _stride;
@@ -1131,7 +1131,7 @@ public:
 					_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
 					_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
 				} //y
-			} // all maps=chans 
+			} // all maps=chans
 		}
 		else if(kern_len==3)
 		{
@@ -1152,11 +1152,11 @@ public:
 					dw.x[w_i+1+(2)*kern_len]+= unwrap_2d_dot( _top + 1+(2)*jstep, _delta,	node_size,top_node_size, delta_size);
 					dw.x[w_i+2+(2)*kern_len]+= unwrap_2d_dot( _top + 2+(2)*jstep, _delta,	node_size,top_node_size, delta_size);
 				} //y
-			} // all maps=chans 
+			} // all maps=chans
 		}
 		else
 		{
-		
+
 			for(int map=0; map<maps; map++) // how many maps  maps= node.chans
 			{
 				const float *_delta =&delta.x[map*map_stride];
@@ -1174,7 +1174,7 @@ public:
 						} // all input chans
 					} // x
 				} //y
-			} // all maps=chans 
+			} // all maps=chans
 		}
 	}
 
@@ -1182,7 +1182,7 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------
-// D E E P C N E T   
+// D E E P C N E T
 // 2x2 convolution followed by 2x2 max pool
 // odd number should be in-size, then -1 after convolution and divide by 2 for output size
 class deepcnet_layer : public base_layer
@@ -1201,7 +1201,7 @@ public:
 
 	deepcnet_layer(const char *layer_name, int _c, activation_function *p) : base_layer(layer_name, 2, 2, _c)
 	{
-		p_act = p; _stride = 1; kernel_rows = 2; kernel_cols = 2; maps = _c; 
+		p_act = p; _stride = 1; kernel_rows = 2; kernel_cols = 2; maps = _c;
 		kernels_per_map = 0; pad_cols = 1; pad_rows = 1;
 		_use_bias = true;
 	}
@@ -1240,7 +1240,7 @@ public:
 
 	// activate_nodes
 	virtual void activate_nodes()
-	{ 
+	{
 		const int map_size = node.rows*node.cols;
 		const int map_stride = node.chan_stride;
 		const int _maps = maps;
@@ -1256,14 +1256,14 @@ public:
 		//int output_index=0;
 		const int kernel_size = kernel_cols*kernel_rows;
 		const int kernel_map_step = kernel_size*kernels_per_map;
-		
+
 		const int pool_map_size = node.cols*node.rows;
 		const int pool_map_stride = node.chan_stride;
 		const float *_w = w.x;
 		const int top_chans = top.node.chans;
 		const int map_cnt = maps;
 		const int w_size = kernel_cols;
-		const int stride = _stride; 
+		const int stride = _stride;
 
 		const int conv_size = node.cols * _pool;
 		const int pool_size = node.cols;
@@ -1306,7 +1306,7 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 						maxi = i + (j + 1)*conv_size;
 					if (sum[maxi] < sum[i + 1 + (j + 1)*conv_size])
 						maxi = i + 1 + (j + 1)*conv_size;
-						
+
 					//const int pool_idx = (i + j * pool_size) / _pool;
 					out[cnt] = sum[maxi];
 					p_map[idx] = maxi+ conv_size*conv_size*map;
@@ -1365,7 +1365,7 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 			matrix img_ptr(delta_size, delta_size, 4, NULL, true);
 			matrix filter_ptr(4, 1);
 		matrix delt(top.delta.cols, top.delta.rows, top.delta.chans,NULL,true);
-					
+
 			//matrix imgout_ptr(outsize + 7, 1);
 			for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
 			{
@@ -1426,7 +1426,7 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 					for (int ii = 0; ii<kern_len; ii += 1)
 					{
 						dw.x[w_i + ii + (jj)*kern_len] +=
-							unwrap_2d_dot(_top + ii + (jj)*jstep, _delta, 
+							unwrap_2d_dot(_top + ii + (jj)*jstep, _delta,
 								delta_size, top_node_size, delta_size);
 
 					} // all input chans
@@ -1440,7 +1440,7 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 };
 
 //----------------------------------------------------------------------------------------------------------
-// C O N C A T E N A T I O N   |     R E S I Z E    |      P  A  D 
+// C O N C A T E N A T I O N   |     R E S I Z E    |      P  A  D
 //
 // puts a set of output maps together and pads to the desired size
 class concatenation_layer : public base_layer
@@ -1458,14 +1458,14 @@ public:
 		p_act = NULL;// new_activation_function("identity");
 	}
 	virtual  ~concatenation_layer() {}
-	virtual std::string get_config_string() 
-	{ 
+	virtual std::string get_config_string()
+	{
 		std::string str_p = " zero\n";
 		if (_pad_type == mojo::edge) str_p = " edge\n";
 		else if (_pad_type == mojo::median_edge) str_p = " median_edge\n";
 
 		std::string str = "concatenate " + int2str(node.cols) + str_p;
-		return str; 
+		return str;
 	}
 	// this connection work won't work with multiple top layers (yet)
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
@@ -1477,14 +1477,14 @@ public:
 		return base_layer::new_connection(top, weight_mat_index);
 	}
 
-	// no weights 
+	// no weights
 	virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train = 1) {}
 
 	virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
 	{
 		const float *top_node = top.node.x;
 		const int size = node.rows*node.cols;
-	
+
 		int opadx = node.cols - top.node.cols;
 		int opady = node.rows - top.node.rows;
 		int padx=0, pady=0, padx_ex=0, pady_ex=0;
@@ -1553,12 +1553,12 @@ public:
 };
 
 //--------------------------------------------------
-// N E W    L A Y E R 
+// N E W    L A Y E R
 //
 // "input", "fully_connected","max_pool","convolution","concatination"
 base_layer *new_layer(const char *layer_name, const char *config)
 {
-	std::istringstream iss(config); 
+	std::istringstream iss(config);
 	std::string str;
 	iss>>str;
 	int w,h,c,s;
@@ -1570,7 +1570,7 @@ base_layer *new_layer(const char *layer_name, const char *config)
 	else if(str.compare("fully_connected")==0)
 	{
 		std::string act;
-		iss>>c; iss>>act; 
+		iss>>c; iss>>act;
 		return new fully_connected_layer(layer_name, c, new_activation_function(act));
 	}
 	else if (str.compare("softmax") == 0)
@@ -1629,7 +1629,7 @@ base_layer *new_layer(const char *layer_name, const char *config)
 	else if((str.compare("resize")==0) || (str.compare("concatenate") == 0))
 	{
 		std::string pad;
-		iss>>w; 
+		iss>>w;
 		iss >> pad;
 		mojo::pad_type p = mojo::zero;
 		if (pad.compare("median") == 0) p = mojo::median_edge;
@@ -1637,7 +1637,7 @@ base_layer *new_layer(const char *layer_name, const char *config)
 		else if (pad.compare("edge") == 0) p = mojo::edge;
 
 		return new concatenation_layer(layer_name, w,w, p);
-	}	
+	}
 	else
 	{
 

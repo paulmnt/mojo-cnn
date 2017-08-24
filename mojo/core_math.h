@@ -2,20 +2,20 @@
 //
 //    Copyright (c) gnawice@gnawice.com. All rights reserved.
 //	  See LICENSE in root folder
-// 
+//
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -34,7 +34,7 @@
 #include <string>
 #include <cstdlib>
 #include <random>
-#include <algorithm> 
+#include <algorithm>
 
 
 namespace mojo
@@ -58,37 +58,37 @@ inline float dot(const float *x1, const float *x2, const int size)
 	};
 }
 
-inline float unwrap_2d_dot(const float *x1, const float *x2, const int size, int stride1, int stride2)	
-{	
-	float v=0;	
+inline float unwrap_2d_dot(const float *x1, const float *x2, const int size, int stride1, int stride2)
+{
+	float v=0;
 
-	for(int j=0; j<size; j++) 
+	for(int j=0; j<size; j++)
 		v+= dot(&x1[stride1*j],&x2[stride2*j],size);
 	return v;
 }
 
 
 // second item is rotated 180 (this is a convolution)
-inline float dot_rot180(const float *x1, const float *x2, const int size)	
-{	
+inline float dot_rot180(const float *x1, const float *x2, const int size)
+{
 	switch(size)
 	{
-	case 1:  return x1[0]*x2[0]; 
-	case 2:  return x1[0]*x2[1]+x1[1]*x2[0]; 
-	case 3:  return x1[0]*x2[2]+x1[1]*x2[1]+x1[2]*x2[0]; 
-	case 4:  return x1[0]*x2[3]+x1[1]*x2[2]+x1[2]*x2[1]+x1[3]*x2[0]; 
-	case 5:  return x1[0]*x2[4]+x1[1]*x2[3]+x1[2]*x2[2]+x1[3]*x2[1]+x1[4]*x2[0]; 
-	default: 
+	case 1:  return x1[0]*x2[0];
+	case 2:  return x1[0]*x2[1]+x1[1]*x2[0];
+	case 3:  return x1[0]*x2[2]+x1[1]*x2[1]+x1[2]*x2[0];
+	case 4:  return x1[0]*x2[3]+x1[1]*x2[2]+x1[2]*x2[1]+x1[3]*x2[0];
+	case 5:  return x1[0]*x2[4]+x1[1]*x2[3]+x1[2]*x2[2]+x1[3]*x2[1]+x1[4]*x2[0];
+	default:
 		float v=0;
 		for(int i=0; i<size; i++) v+=x1[i]*x2[size-i-1];
-		return v;	
+		return v;
 	};
 
 }
-inline float unwrap_2d_dot_rot180(const float *x1, const float *x2, const int size, int stride1, int stride2)	
-{	
-	float v=0;	
-	for(int j=0; j<size; j++) 
+inline float unwrap_2d_dot_rot180(const float *x1, const float *x2, const int size, int stride1, int stride2)
+{
+	float v=0;
+	for(int j=0; j<size; j++)
 	{
 		v+= dot_rot180(&x1[stride1*j],&x2[stride2*(size-j-1)],size);
 	}
@@ -139,7 +139,7 @@ inline void unwrap_aligned_NxN(const int N, float *aligned_out,  const float *in
 				int cnt=0;
 				for (int k = 0; k < N; k++)
 				{
-					for (int m = 0; m < N; m++) 
+					for (int m = 0; m < N; m++)
 					{
 						aligned_out[c1 + cnt*8 + off] = tn[0 + m + in_size*k];
 						cnt++;
@@ -162,11 +162,11 @@ inline void dotsum_unwrapped_NxN(const int N, const float *im,  const float *fil
 	for (int j = 0; j < outsize; j += 8)
 	{
 		float *c = out+j;
-		for(int i=0; i<NN; i++) 
-		{ 
+		for(int i=0; i<NN; i++)
+		{
 			const float f = filter_ptr[i];
 			c[0]+=im[0]*f; c[1]+=im[1]*f; c[2]+=im[2]*f; c[3]+=im[3]*f; c[4]+=im[4]*f; c[5]+=im[5]*f; c[6]+=im[6]*f; c[7]+=im[7]*f;
-			im+=8; 
+			im+=8;
 		}
 	}
 }
@@ -188,9 +188,9 @@ inline void dotsum_unwrapped_2x2(const float *_img, const float *filter_ptr, flo
 		a = _mm256_load_ps(_img +  8); c1 = _mm256_mul_ps(a, f1); c0 = _mm256_add_ps(c0, c1);
 		a = _mm256_load_ps(_img + 16); c1 = _mm256_mul_ps(a, f2); c0 = _mm256_add_ps(c0, c1);
 		a = _mm256_load_ps(_img + 24); c1 = _mm256_mul_ps(a, f3); c0 = _mm256_add_ps(c0, c1);
-		
+
 		// add result to output
-		a = _mm256_load_ps(out + j); 
+		a = _mm256_load_ps(out + j);
 		c0 = _mm256_add_ps(c0, a);
 		_mm256_stream_ps(out + j, c0);
 		_img += 32;
@@ -222,7 +222,7 @@ inline void dotsum_unwrapped_3x3(const float *_img, const float *filter_ptr, flo
 		a = _mm256_load_ps(_img + 56); c1 = _mm256_mul_ps(a, f7); c0 = _mm256_add_ps(c0, c1);
 		a = _mm256_load_ps(_img + 64); c1 = _mm256_mul_ps(a, f8); c0 = _mm256_add_ps(c0, c1);
 		// add result to output
-		a = _mm256_load_ps(out + j); 
+		a = _mm256_load_ps(out + j);
 		c0 = _mm256_add_ps(c0, a);
 		_mm256_stream_ps(out + j, c0);
 		_img += 72;
@@ -265,7 +265,7 @@ inline void dotsum_unwrapped_4x4(const float *_img, const float *filter_ptr, flo
 		a = _mm256_load_ps(_img + 112); c1 = _mm256_mul_ps(a, f14); c0 = _mm256_add_ps(c0, c1);
 		a = _mm256_load_ps(_img + 120); c1 = _mm256_mul_ps(a, f15); c0 = _mm256_add_ps(c0, c1);
 		// add result to output
-		a = _mm256_load_ps(out + j); 
+		a = _mm256_load_ps(out + j);
 		c0 = _mm256_add_ps(c0, a);
 		_mm256_stream_ps(out + j, c0);
 		_img += 128;
@@ -290,7 +290,7 @@ inline void dotsum_unwrapped_5x5(const float *_img, const float *filter_ptr, flo
 	const __m256 f18 = _mm256_broadcast_ss(&filter_ptr[18]); const __m256 f19 = _mm256_broadcast_ss(&filter_ptr[19]);
 	const __m256 f20 = _mm256_broadcast_ss(&filter_ptr[20]); const __m256 f21 = _mm256_broadcast_ss(&filter_ptr[21]);
 	const __m256 f22 = _mm256_broadcast_ss(&filter_ptr[22]); const __m256 f23 = _mm256_broadcast_ss(&filter_ptr[23]);
-	const __m256 f24 = _mm256_broadcast_ss(&filter_ptr[24]); 
+	const __m256 f24 = _mm256_broadcast_ss(&filter_ptr[24]);
 
 	for (int j = 0; j < outsize; j += 8)
 	{
@@ -339,7 +339,7 @@ inline void dotsum_unwrapped_7x7(const float *_img,  const float *filter_ptr, fl
 
 	_mm256_zeroupper();
 	__m256 f[49];//=new __m256(s);
-	for(int i=0; i<49; i++) f[i]= _mm256_broadcast_ss(&filter_ptr[i]); 
+	for(int i=0; i<49; i++) f[i]= _mm256_broadcast_ss(&filter_ptr[i]);
 
 	for (int j = 0; j < outsize; j += 8)
 	{
@@ -443,14 +443,14 @@ public:
 	}
 
 	~matrix() { if (x) delete_x(); }
-	
+
 	matrix get_chans(int start_channel, int num_chans=1) const
 	{
 		return matrix(cols,rows,num_chans,&x[start_channel*chan_stride]);
 	}
 
 
-	// if edge_pad==0, then the padded area is just 0. 
+	// if edge_pad==0, then the padded area is just 0.
 	// if edge_pad==1 it fills with edge pixel colors
 	// if edge_pad==2 it fills with median edge pixel color
 	matrix pad(int dx, int dy, mojo::pad_type edge_pad = mojo::zero, int threads=1) const
@@ -461,8 +461,8 @@ public:
 	{
 		matrix v(cols+dx+dx_right,rows+dy+dy_bottom,chans);//,NULL,this->chan_aligned);
 		v.fill(0);
-	
-		//float *new_x = new float[chans*w*h]; 
+
+		//float *new_x = new float[chans*w*h];
 #pragma omp parallel for num_threads(threads)
 		for(int k=0; k<chans; k++)
 		{
@@ -513,11 +513,11 @@ public:
 			}
 			if (edge_pad == mojo::median_edge)
 			{
-				for (int j = 0; j<dy; j++)	
-					for (int i = 0; i<v.cols; i++) 
+				for (int j = 0; j<dy; j++)
+					for (int i = 0; i<v.cols; i++)
 						v.x[i + j*v.cols + v_chan_offset] = median;
-				for (int j = 0; j<dy_bottom; j++) 
-					for (int i = 0; i<v.cols; i++) 
+				for (int j = 0; j<dy_bottom; j++)
+					for (int i = 0; i<v.cols; i++)
 						v.x[i + (j + dy + rows)*v.cols + v_chan_offset] = median;
 			}
 		}
@@ -566,7 +566,7 @@ public:
 	mojo::matrix flip_rows()
 	{
 		mojo::matrix v(cols, rows, chans);
-		
+
 		for (int k = 0; k<chans; k++)
 			for (int j = 0; j<rows; j++)
 				memcpy(&v.x[(rows-1-j)*cols + k*chan_stride],&x[j*cols + k*chan_stride], cols*sizeof(float));
@@ -589,7 +589,7 @@ public:
 	{
 		int s = rows*cols;
 		int mini = 0;
-		int maxi = 0; 
+		int maxi = 0;
 		for (int c = 0; c < chans; c++)
 		{
 			const int t = chan_stride*c;
@@ -624,9 +624,9 @@ public:
 		int s = rows*cols;
 		int offset = channel*chan_stride;
 		float average=0;
-		for(int i=0; i<s; i++) average+=x[i+offset];		
+		for(int i=0; i<s; i++) average+=x[i+offset];
 		average= average/(float)s;
-		for(int i=0; i<s; i++) x[i+offset]-=average;		
+		for(int i=0; i<s; i++) x[i+offset]-=average;
 		return average;
 	}
 
@@ -635,10 +635,10 @@ public:
 		float m=mean();
 		int s = chan_stride*chans;
 		//int offset = channel*s;
-		for(int i=0; i<s; i++) x[i]-=m;		
+		for(int i=0; i<s; i++) x[i]-=m;
 		return m;
 	}
-	void fill(float val) { for(int i=0; i<_size; i++) x[i]=val; 
+	void fill(float val) { for(int i=0; i<_size; i++) x[i]=val;
 	}
 	void fill_random_uniform(float range)
 	{
@@ -663,19 +663,19 @@ public:
 		return *this;
 	}
 
-	int  size() const {return _size;} 
-	
-	void resize(int _w, int _h, int _c, int align_chans=0) { 
+	int  size() const {return _size;}
+
+	void resize(int _w, int _h, int _c, int align_chans=0) {
 		chan_aligned = align_chans;
 		int new_stride = calc_chan_stride(_w,_h);
 		int s = new_stride*_c;
-		if(s>_capacity) 
-		{ 
+		if(s>_capacity)
+		{
 			if(_capacity>0) delete_x(); _size = s; _capacity=_size; x = new_x(_size);
 		}
-		cols = _w; rows = _h; chans = _c; _size = s; chan_stride = new_stride; 
-	} 
-	
+		cols = _w; rows = _h; chans = _c; _size = s; chan_stride = new_stride;
+	}
+
 	// dot vector to 2d mat
 	inline matrix dot_1dx2d(const matrix &m_2d) const
 	{
@@ -739,7 +739,7 @@ public:
 	inline matrix operator +(matrix m2)
 	{
 		matrix T(cols,rows,chans);
-		for(int i = 0; i < _size; i++) T.x[i] = x[i] + m2.x[i]; 
+		for(int i = 0; i < _size; i++) T.x[i] = x[i] + m2.x[i];
 		return T;
 	}
 };

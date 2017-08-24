@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -29,7 +29,7 @@
 //    K. Simonyan, A. Zisserman
 //    arXiv:1409.1556
 //
-//    Instructions: 
+//    Instructions:
 //	  Download the mojo VGG16 model from https://drive.google.com/file/d/0B5Dx9ePCIXQAZU51T0MyQXpvOXc/view?usp=sharing
 // ==================================================================== mojo ==
 
@@ -65,36 +65,36 @@ int main(int argc, char **argv)
 	// convert packed BGR to planar BGR and subtract VGG mean (while converting to float)
 	cv::Mat bgr[3];
 	cv::split(im,bgr);
-	float *img = new float [3*224*224]; 
+	float *img = new float [3*224*224];
 	for(int i=0; i<224*224;i++)
 	{
 		img[i+224*224*0]= (float)bgr[2].data[i] - 123.939f;
 		img[i+224*224*1]= (float)bgr[1].data[i] - 116.779f;
 		img[i+224*224*2]= (float)bgr[0].data[i] - 103.68f;
 	}
-	
+
 
 	// create a network
-	mojo::network cnn; 
+	mojo::network cnn;
 
 	// tell engine to use threading to make prediction faster
-	cnn.enable_internal_threads(2); 
+	cnn.enable_internal_threads(2);
 
 	// load VGG16 model
 	std::cout << "Loading VGG16 model..." << std::endl;
 	if(!cnn.read(model_file)) {std::cerr << "error: could not read model.\n"; return 1;}
 
-	// start a (low precision) timer 
+	// start a (low precision) timer
 	std::cout << "Classifying image..." << std::endl;
 	mojo::progress timer;
-	
+
 	float *out=cnn.forward(img);
 
 	int first = mojo::arg_max(out,cnn.out_size());
 	std::cout << "Results:" << std::endl;
 	std::cout << "  latency: \t\t" << timer.elapsed_seconds() << " seconds/sample"<< std::endl;
 	std::cout << "  1: label|score: \t\"" << labels[first] << "\" | " << out[first] << std::endl;
-	// find next best 
+	// find next best
 	out[first]=-1;
 	int second= mojo::arg_max(out, cnn.out_size());
 	std::cout << "  2: label|score: \t\"" << labels[second] << "\" | " << out[second] << std::endl;

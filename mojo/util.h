@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -78,7 +78,7 @@ public:
 	unsigned int total_progress_items;
 	std::string label_progress;
 	// if default values used, the values won't be changed from last call
-	void reset(int size=-1, const char *label=NULL ) 
+	void reset(int size=-1, const char *label=NULL )
 	{
 #if (_MSC_VER  == 1600)
 		start_progress_time= clock();
@@ -87,8 +87,8 @@ public:
 #endif
 		if(size>0) total_progress_items=size; if(label!=NULL) label_progress=label;
 	}
-	float elapsed_seconds() 
-	{	
+	float elapsed_seconds()
+	{
 #if (_MSC_VER  == 1600)
 		float time_span = (float)(clock() - start_progress_time)/CLOCKS_PER_SEC;
 		return time_span;
@@ -105,7 +105,7 @@ public:
 		return 0.f;
 	}
 	// this doesn't work correctly with g++/Cygwin
-	// the carriage return seems to delete the text... 
+	// the carriage return seems to delete the text...
 	void draw_progress(int item_index)
 	{
 		int time_remaining = (int)remaining_seconds(item_index);
@@ -139,7 +139,7 @@ public:
 		for (int i = 0; i<L; i++) header += "=";
 		if (_time)
 			std::cout << header << elapsed << std::endl;
-		else 
+		else
 			std::cout << header << std::endl;
 	}
 };
@@ -230,7 +230,7 @@ public:
 #if defined(MOJO_CV2) || defined(MOJO_CV3)
 
 
-	// transforms image. 
+	// transforms image.
 	// x_center, y_center of input
 	// out dim is size of output w or h
 	// theta in degrees
@@ -331,7 +331,7 @@ public:
 			//			pts1[pt].y = pts1[pt].y / (float)scale;
 			//		}
 		}
-		
+
 		cv::Mat input = mojo::matrix2cv(in,false);
 
 		//	if (scale>1)
@@ -390,7 +390,7 @@ void show(const mojo::matrix &m, float zoom = 1.0f, const char *win_name = "", i
 {
 	if (m.cols <= 0 || m.rows <= 0 || m.chans <= 0) return;
 	cv::Mat cv_m = matrix2cv(m,false);
-	
+
 	double min_, max_;
 	cv_m = cv_m.reshape(1);
 	cv::minMaxIdx(cv_m, &min_, &max_);
@@ -406,7 +406,7 @@ void show(const mojo::matrix &m, float zoom = 1.0f, const char *win_name = "", i
 	cv::waitKey(wait_ms);
 }
 
-// null name hides all windows	
+// null name hides all windows
 void hide(const char *win_name = "")
 {
 	if (win_name == NULL) cv::destroyAllWindows();
@@ -451,7 +451,7 @@ cv::Mat colorize(cv::Mat im, mojo::mojo_palette color_palette = mojo::gray)
 		else if (color_palette == mojo::voodoo)
 		{
 			if (c == 255) { RGB[2].data[i] = 255; RGB[1].data[i] = 255;  RGB[0].data[i] = 255; }
-			else if (c < 128) 
+			else if (c < 128)
 			{ RGB[2].data[i] = (127-c); RGB[1].data[i] = 0; RGB[0].data[i] = 2 * (127 - c); }
 			else { RGB[2].data[i] =  (c - 128); RGB[1].data[i] = 2*(c-128); RGB[0].data[i] = 0; }
 		}

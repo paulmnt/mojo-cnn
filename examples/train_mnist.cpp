@@ -5,17 +5,17 @@
 //
 //    Permission is hereby granted, free of charge, to any person obtaining a
 //    copy of this software and associated documentation files(the "Software"),
-//    to deal in the Software without restriction, including without 
+//    to deal in the Software without restriction, including without
 //    limitation the rights to use, copy, modify, merge, publish, distribute,
 //    sublicense, and/or sell copies of the Software, and to permit persons to
-//    whom the Software is furnished to do so, subject to the following 
+//    whom the Software is furnished to do so, subject to the following
 //    conditions :
 //
 //    The above copyright notice and this permission notice shall be included
 //    in all copies or substantial portions of the Software.
 //
 //    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+//    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 //    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 //    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 //    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
@@ -25,7 +25,7 @@
 // ============================================================================
 //    train_mnist.cpp:  train MNIST classifier
 //
-//    Instructions: 
+//    Instructions:
 //	  Add the "mojo" folder in your include path.
 //    Download MNIST data and unzip locally on your machine:
 //		(http://yann.lecun.com/exdb/mnist/index.html)
@@ -41,7 +41,7 @@
 
 //#define MOJO_CV3
 
-#include <mojo.h>  
+#include <mojo.h>
 #include <util.h>
 #include "mnist_parser.h"
 
@@ -94,7 +94,7 @@ int main()
 	cnn.set_mini_batch_size(mini_batch_size);
 	cnn.set_smart_training(true); // automate training
 	cnn.set_learning_rate(initial_learning_rate);
-	
+
 	// Note, network descriptions can be read from a text file with similar format to the API
 	cnn.read("../models/mnist_quickstart.txt");
 
@@ -109,7 +109,7 @@ int main()
 	cnn.push_back("FC2", "softmax 10");					// 'flatten' of 2x2 input is inferred
 	// connect all the layers. Call connect() manually for all layer connections if you need more exotic networks.
 	cnn.connect_all();
-	// */	
+	// */
 
 	std::cout << "==  Network Configuration  ====================================================" << std::endl;
 	std::cout << cnn.get_configuration() << std::endl;
@@ -118,14 +118,14 @@ int main()
 	mojo::html_log log;
 	log.set_table_header("epoch\ttest accuracy(%)\testimated accuracy(%)\tepoch time(s)\ttotal time(s)\tlearn rate\tmodel");
 	log.set_note(cnn.get_configuration());
-				
+
 	// augment data random shifts only
 	cnn.set_random_augmentation(1,1,0,0,mojo::edge);
 
 	// setup timer/progress for overall training
 	mojo::progress overall_progress(-1, "  overall:\t\t");
 	const int train_samples = (int)train_images.size();
-	float old_accuracy = 0; 
+	float old_accuracy = 0;
 	while (1)
 	{
 		overall_progress.draw_header(data_name() + "  Epoch  " + std::to_string((long long)cnn.get_epoch() + 1), true);
@@ -147,7 +147,7 @@ int main()
 		mojo::show(mojo::draw_cnn_weights(cnn, "C1",mojo::tensorglow), 2 /* scale x 2 */, "C1 Weights");
 		mojo::show(mojo::draw_cnn_weights(cnn, "C2",mojo::tensorglow), 2, "C2 Weights");
 		#endif
-		
+
 		cnn.end_epoch();
 		float dt = progress.elapsed_seconds();
 		std::cout << "  mini batch:\t\t" << mini_batch_size << "                               " << std::endl;
