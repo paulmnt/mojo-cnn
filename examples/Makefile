@@ -32,7 +32,7 @@ INCDIR = -I$(OPENCV)/include -I../mojo/
 CXXFLAGS ?= -std=c++11 -O3
 CXXFLAGS += $(INCDIR)
 ifdef OMP
-CXXFLAGS += -fopenmp -DMOJO_OPM
+CXXFLAGS += -fopenmp -DMOJO_OMP
 endif
 ifdef OCV2
 CXXFLAGS += -DMOJO_CV2
