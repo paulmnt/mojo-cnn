@@ -1,4 +1,5 @@
 models/snapshots/
+models/*.mojo
 data/
 
 #################
