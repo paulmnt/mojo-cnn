@@ -1,4 +1,8 @@
 
+#
+# Aliases
+#
+
 # Define V=1 for a more verbose compilation
 ifndef V
         QUIET_CXX           = @echo '   ' CXX $@;
@@ -10,6 +14,11 @@ ifndef V
 endif
 
 RM = rm -rf
+
+
+#
+# Environment variables
+#
 
 OPENCV ?= /opt/opencv
 
@@ -54,14 +63,17 @@ LDFLAGS = \
 
 SRCS := test.cpp train_mnist.cpp train_cifar.cpp vgg.cpp
 OBJS := $(SRCS:.cpp=)
-HDRS := $(wildcard ../mojo/*.h)
+HDRS := $(wildcard ../mojo/*.h) $(wildcard ./*.h)
 
 all: $(OBJS)
 
 .SUFFIX: .c .cpp
 
-.c:
+# The following rules are inferred by make. Overriding to add $(QUIET_CXX)
+.cpp:
 	$(QUIET_CXX) $(CXX) $(CXXFLAGS) $< -o $@ $(LDLIBS) $(LDFLAGS)
+
+$(OBJS): $(HDRS)
 
 clean:
 	$(QUIET_CLEAN) $(RM) $(OBJS)
@@ -77,8 +89,9 @@ distclean: clean
 
 .PHONY: all clean distclean
 
+
 #
-# Get Data Sets
+# Get Data Sets and Pretrained Models
 #
 
 MNIST_DATA := ../data/mnist/train-labels-idx1-ubyte \
