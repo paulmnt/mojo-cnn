@@ -4,13 +4,19 @@ ifndef V
         QUIET_CXX           = @echo '   ' CXX $@;
         QUIET_MKDIR         = @echo '   ' MKDIR $@;
         QUIET_RUN           = @echo '   ' RUN $@;
-        QUIET_WGET           = @echo '   ' WGET $@;
+        QUIET_UNZIP         = @echo '   ' UNZIP $@;
+        QUIET_WGET          = @echo '   ' WGET $@;
         QUIET_CLEAN         = @echo '   ' CLEAN $@;
 endif
 
 RM = rm -rf
 
 OPENCV ?= /opt/opencv
+
+
+#
+# Compile
+#
 
 INCDIR = -I$(OPENCV)/include -I../mojo/
 
@@ -61,32 +67,68 @@ clean:
 	$(QUIET_CLEAN) $(RM) $(OBJS)
 
 distclean: clean
-	$(QUIET_CLEAN) $(RM) ../data/cifar-10-batches-bin ../data/cifar-10-binary.tar.gz ../data/mnist
+	$(QUIET_CLEAN) $(RM) \
+	../data/cifar-10-batches-bin \
+	../data/cifar-10-binary.tar.gz \
+	../data/mnist \
+	$(MOJO_PRETRAINED) \
+	../models/snapshots/*.htm \
+	../models/snapshots/*.txt
 
 .PHONY: all clean distclean
 
-
+#
+# Get Data Sets
+#
 
 MNIST_DATA := ../data/mnist/train-labels-idx1-ubyte \
 		../data/mnist/t10k-labels-idx1-ubyte \
 		../data/mnist/train-images-idx3-ubyte \
 		../data/mnist/t10k-images-idx3-ubyte
 
+MOJO_PRETRAINED := ../models/cifar_deepcnet.mojo \
+		../models/mnist_deepcnet.mojo \
+		../models/vgg16.mojo
+
 $(MNIST_DATA):
 	$(QUIET_MKDIR) mkdir -p ../data/mnist
 	$(QUIET_WGET) wget $(subst ../data,http://yann.lecun.com/exdb,$@.gz) -O $@.gz
-	gzip -d $@.gz
+	$(QUIET_UNZIP) gzip -d $@.gz
 
 ../data/cifar-10-binary.tar.gz:
-	wget $(subst ../data,https://www.cs.toronto.edu/~kriz/, $@) -O $@
+	$(QUIET_WGET) wget $(subst ../data,https://www.cs.toronto.edu/~kriz/, $@) -O $@
 
 
 ../data/cifar-10-batches-bin: ../data/cifar-10-binary.tar.gz
-	tar xf $< -C ../data
+	$(QUIET_UNZIP) tar xf $< -C ../data
+	@touch $@
 
+$(MOJO_PRETRAINED):
+	$(QUIET_WGET) wget $(subst ../models,http://espdev.cs.columbia.edu/data_sets,$@) -O $@
 
-data: $(MNIST_DATA) ../data/cifar-10-batches-bin
+data: $(MNIST_DATA) ../data/cifar-10-batches-bin $(MOJO_PRETRAINED)
 
 .PHONY: data
 
-#TODO: write run targets with LD_LIBRARY_PATH set and data dependencies
+
+#
+# Run
+#
+
+RUNS := $(SRCS:.cpp=-run)
+
+$(RUNS): %-run : %-data %
+	@LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(OPENCV)/lib ./$(@:-run=)
+
+test-data: ../data/mnist/t10k-labels-idx1-ubyte \
+	../data/mnist/t10k-images-idx3-ubyte \
+	../models/cifar_deepcnet.mojo \
+	../models/mnist_deepcnet.mojo
+
+vgg-data: ../data/dog.jpg ../models/vgg16.mojo
+
+train_mnist-data: $(MNIST_DATA)
+
+train_cifar-data:  ../data/cifar-10-batches-bin
+
+.PHONY: $(RUNS)
