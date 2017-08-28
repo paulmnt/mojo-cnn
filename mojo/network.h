@@ -26,10 +26,11 @@
 //    network.h: The main artificial neural network graph for mojo
 // ==================================================================== mojo ==
 
-#pragma once
+#ifndef _NETWORK_H_
+#define _NETWORK_H_
 
 #include <string>
-#include <iostream> // cout
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <map>
@@ -40,89 +41,21 @@
 #include "activation.h"
 #include "cost.h"
 
-// hack for VS2010 to handle c++11 for(:)
-#if (_MSC_VER  == 1600)
-	#ifndef __for__
-	#define __for__ for each
-	#define __in__ in
-	#endif
-#else
-	#ifndef __for__
-	#define __for__ for
-	#define __in__ :
-	#endif
+#ifndef __for__
+#define __for__ for
+#define __in__ :
 #endif
-
-
-
-#if defined(MOJO_CV2) || defined(MOJO_CV3)
-
-#ifdef MOJO_CV2
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/contrib/contrib.hpp"
-
-#pragma comment(lib, "opencv_core249")
-#pragma comment(lib, "opencv_highgui249")
-#pragma comment(lib, "opencv_imgproc249")
-#pragma comment(lib, "opencv_contrib249")
-#else  //#ifdef MOJO_CV3
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-
-#pragma comment(lib, "opencv_world310")
-#endif
-#endif
-
-
-
 
 namespace mojo {
 
-#if defined(MOJO_CV2) || defined(MOJO_CV3)
-// forward declare these for data augmentation
-cv::Mat matrix2cv(const mojo::matrix &m, bool uc8 = false);
-mojo::matrix cv2matrix(cv::Mat &m);
-mojo::matrix transform(const mojo::matrix in, const int x_center, const int y_center, int out_dim, float theta = 0, float scale = 1.f);
-#endif
-
 
 	// sleep needed for threading
-#ifdef _WIN32
-#include <windows.h>
-	void mojo_sleep(unsigned milliseconds) { Sleep(milliseconds); }
-#else
 #include <unistd.h>
 	void mojo_sleep(unsigned milliseconds) { usleep(milliseconds * 1000); }
-#endif
 
 #ifdef MOJO_PROFILE_LAYERS
-#ifdef _WIN32
-	//* used for profiling layers
-	double PCFreq = 0.0;
-	__int64 CounterStart = 0;
-
-	void StartCounter()
-	{
-		LARGE_INTEGER li;
-		if (!QueryPerformanceFrequency(&li)) return;
-		PCFreq = double(li.QuadPart) / 1000.0;
-		QueryPerformanceCounter(&li);
-		CounterStart = li.QuadPart;
-	}
-	double GetCounter()
-	{
-		LARGE_INTEGER li;
-		QueryPerformanceCounter(&li);
-		return double(li.QuadPart - CounterStart) / PCFreq;
-	}
-#else
 	void StartCounter(){}
 	double GetCounter(){return 0;}
-#endif
-
 #endif
 	//*/
 
@@ -184,20 +117,11 @@ class network
 	solver *_solver;
 	static const unsigned char BATCH_RESERVED = 1, BATCH_FREE = 0, BATCH_COMPLETE = 2;
 	static const int BATCH_FILLED_COMPLETE = -2, BATCH_FILLED_IN_PROCESS = -1;
-#ifdef MOJO_OMP
-	omp_lock_t _lock_batch;
-	void lock_batch() {omp_set_lock(&_lock_batch);}
-	void unlock_batch() {omp_unset_lock(&_lock_batch);}
-	void init_lock() {omp_init_lock(&_lock_batch);}
-	void destroy_lock() {omp_destroy_lock(&_lock_batch);}
-	int get_thread_num() {return omp_get_thread_num();}
-#else
 	void lock_batch() {}
 	void unlock_batch() {}
 	void init_lock(){}
 	void destroy_lock() {}
 	int get_thread_num() {return 0;}
-#endif
 
 public:
 	// training progress stuff
@@ -266,10 +190,6 @@ public:
 		augment_theta=0; augment_scale=0;
 
 		init_lock();
-#ifdef USE_AF
-		af::setDevice(0);
-        af::info();
-#endif
 	}
 
 	~network()
@@ -320,29 +240,15 @@ public:
 	// value <1 will result in thread count = # cores (including hyperthreaded)
 	void enable_external_threads(int threads = -1)
 	{
-#ifdef MOJO_OMP
-		if (threads < 1) threads = omp_get_num_procs();
-		_thread_count = threads;
-		if(_internal_thread_count<=_thread_count) omp_set_num_threads(_thread_count);
-
-#else
 		if (threads < 1) _thread_count = 1;
 		else _thread_count = threads;
 		if (threads > 1) bail("must define MOJO_OMP to used threading");
-#endif
 		build_layer_sets();
 	}
 
 	void enable_internal_threads(int threads = -1)
 	{
-#ifdef MOJO_OMP
-		if (threads < 1) {threads = omp_get_num_procs(); threads = threads-1;} // one less than core count
-		if(threads<1) _internal_thread_count=1;
-		else _internal_thread_count=threads;
-#else
 		_internal_thread_count=1;
-#endif
-
 	}
 
 	// when using threads, need to get bias data synched between all layer sets,
@@ -844,7 +750,6 @@ public:
 	}
 	bool read(const char *filename) { return  read(std::string(filename)); }
 
-#ifndef MOJO_NO_TRAINING  // this is surely broke by now and will need to be fixed
 
 	// ===========================================================================
 	// training part
@@ -1097,9 +1002,6 @@ public:
 	void update_smart_train(const float E, bool correct)
 	{
 
-#ifdef MOJO_OMP
-#pragma omp critical
-#endif
 		{
 			train_samples++;
 			if (correct) train_correct++;
@@ -1239,10 +1141,6 @@ public:
 				mojo::matrix m(layer->node.cols, layer->node.rows, layer->node.chans, in + offset);
 				if (m.rows > 1 && m.cols > 1)
 				{
-#if defined(MOJO_CV2) || defined(MOJO_CV3)
-					if ((augment_theta > 0 || augment_scale > 0))
-						m = transform(m, m.cols / 2, m.rows / 2, m.cols, t, 1 + s);
-#endif
 					if (flip_v)m = m.flip_cols();
 					if (flip_h)	m = m.flip_rows();
 					mojo::matrix aug = m.shift(shift_x, shift_y, augment_pad);
@@ -1293,14 +1191,6 @@ public:
 			//augment_v_flip = flip_v;
 			// copy input to matrix type
 			mojo::matrix m(layer_sets[thread_number][0]->node.cols, layer_sets[thread_number][0]->node.rows, layer_sets[thread_number][0]->node.chans, in);
-#if defined(MOJO_CV2) || defined(MOJO_CV3)
-			if (augment_theta > 0 || augment_scale > 0)
-			{
-				float s = ((float)(rand() % 101) / 50.f - 1.f)*augment_scale;
-				float t = ((float)(rand() % 101) / 50.f - 1.f)*augment_theta;
-				m = transform(m, m.cols / 2, m.rows / 2, m.cols, t, 1+s);
-			}
-#endif
 			if (augment_h_flip)
 				if ((rand() % 2) == 0)
 					m = m.flip_cols();
@@ -1512,19 +1402,8 @@ public:
 		return true;
 	}
 
-#else
-
-	float get_learning_rate() {return 0;}
-	void set_learning_rate(float alpha) {}
-	void train(float *in, float *target){}
-	void reset() {}
-	float get_smart_train_level() {return 0;}
-	void set_smart_train_level(float _level) {}
-	bool get_smart_train() { return false; }
-	void set_smart_train(bool _use) {}
-
-#endif
-
 };
 
 }
+
+#endif // _NETWORK_H_

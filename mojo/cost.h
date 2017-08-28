@@ -27,7 +27,8 @@
 // ==================================================================== mojo ==
 
 
-#pragma once
+#ifndef _COST_H_
+#define _COST_H_
 
 #include <math.h>
 #include <algorithm>
@@ -82,3 +83,5 @@ cost_function* new_cost_function(const char *type)
 }
 
 }
+
+#endif // _COST_H_

@@ -27,7 +27,8 @@
 // ==================================================================== mojo ==
 
 
-#pragma once
+#ifndef _CORE_MATH_H_
+#define _CORE_MATH_H_
 
 #include <math.h>
 #include <string.h>
@@ -171,199 +172,6 @@ inline void dotsum_unwrapped_NxN(const int N, const float *im,  const float *fil
 	}
 }
 
-#ifdef MOJO_AVX
-
-inline void dotsum_unwrapped_2x2(const float *_img, const float *filter_ptr, float *out, const int outsize)
-{
-	_mm256_zeroupper();
-
-	const __m256 f0 = _mm256_broadcast_ss(&filter_ptr[0]); const __m256 f1 = _mm256_broadcast_ss(&filter_ptr[1]);
-	const __m256 f2 = _mm256_broadcast_ss(&filter_ptr[2]); const __m256 f3 = _mm256_broadcast_ss(&filter_ptr[3]);
-
-	for (int j = 0; j < outsize; j += 8)
-	{
-		__m256 a, c0, c1;
-		// multiply filter
-		a = _mm256_load_ps(_img); c0 = _mm256_mul_ps(a, f0);
-		a = _mm256_load_ps(_img +  8); c1 = _mm256_mul_ps(a, f1); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 16); c1 = _mm256_mul_ps(a, f2); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 24); c1 = _mm256_mul_ps(a, f3); c0 = _mm256_add_ps(c0, c1);
-
-		// add result to output
-		a = _mm256_load_ps(out + j);
-		c0 = _mm256_add_ps(c0, a);
-		_mm256_stream_ps(out + j, c0);
-		_img += 32;
-	}
-	_mm256_zeroupper();
-}
-
-inline void dotsum_unwrapped_3x3(const float *_img, const float *filter_ptr, float *out, const int outsize)
-{
-	_mm256_zeroupper();
-
-	const __m256 f0 = _mm256_broadcast_ss(&filter_ptr[0]); const __m256 f1 = _mm256_broadcast_ss(&filter_ptr[1]);
-	const __m256 f2 = _mm256_broadcast_ss(&filter_ptr[2]); const __m256 f3 = _mm256_broadcast_ss(&filter_ptr[3]);
-	const __m256 f4 = _mm256_broadcast_ss(&filter_ptr[4]); const __m256 f5 = _mm256_broadcast_ss(&filter_ptr[5]);
-	const __m256 f6 = _mm256_broadcast_ss(&filter_ptr[6]); const __m256 f7 = _mm256_broadcast_ss(&filter_ptr[7]);
-	const __m256 f8 = _mm256_broadcast_ss(&filter_ptr[8]);
-
-	for (int j = 0; j < outsize; j += 8)//stride) // intput w
-	{
-		__m256 a, c0, c1;
-		// multiply filter
-		a = _mm256_load_ps(_img); c0 = _mm256_mul_ps(a, f0);
-		a = _mm256_load_ps(_img +  8); c1 = _mm256_mul_ps(a, f1); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 16); c1 = _mm256_mul_ps(a, f2); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 24); c1 = _mm256_mul_ps(a, f3); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 32); c1 = _mm256_mul_ps(a, f4); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 40); c1 = _mm256_mul_ps(a, f5); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 48); c1 = _mm256_mul_ps(a, f6); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 56); c1 = _mm256_mul_ps(a, f7); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 64); c1 = _mm256_mul_ps(a, f8); c0 = _mm256_add_ps(c0, c1);
-		// add result to output
-		a = _mm256_load_ps(out + j);
-		c0 = _mm256_add_ps(c0, a);
-		_mm256_stream_ps(out + j, c0);
-		_img += 72;
-	}
-	_mm256_zeroupper();
-
-}
-
-inline void dotsum_unwrapped_4x4(const float *_img, const float *filter_ptr, float *out, const int outsize)
-{
-	_mm256_zeroupper();
-
-	const __m256 f0 = _mm256_broadcast_ss(&filter_ptr[0]); const __m256 f1 = _mm256_broadcast_ss(&filter_ptr[1]);
-	const __m256 f2 = _mm256_broadcast_ss(&filter_ptr[2]); const __m256 f3 = _mm256_broadcast_ss(&filter_ptr[3]);
-	const __m256 f4 = _mm256_broadcast_ss(&filter_ptr[4]); const __m256 f5 = _mm256_broadcast_ss(&filter_ptr[5]);
-	const __m256 f6 = _mm256_broadcast_ss(&filter_ptr[6]); const __m256 f7 = _mm256_broadcast_ss(&filter_ptr[7]);
-	const __m256 f8 = _mm256_broadcast_ss(&filter_ptr[8]); const __m256 f9 = _mm256_broadcast_ss(&filter_ptr[9]);
-	const __m256 f10 = _mm256_broadcast_ss(&filter_ptr[10]); const __m256 f11 = _mm256_broadcast_ss(&filter_ptr[11]);
-	const __m256 f12 = _mm256_broadcast_ss(&filter_ptr[12]); const __m256 f13 = _mm256_broadcast_ss(&filter_ptr[13]);
-	const __m256 f14 = _mm256_broadcast_ss(&filter_ptr[14]); const __m256 f15 = _mm256_broadcast_ss(&filter_ptr[15]);
-
-	for (int j = 0; j < outsize; j += 8)//stride) // intput w
-	{
-		__m256 a, c0, c1;
-		// multiply filter
-		a = _mm256_load_ps(_img); c0 = _mm256_mul_ps(a, f0);
-		a = _mm256_load_ps(_img + 8); c1 = _mm256_mul_ps(a, f1); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 16); c1 = _mm256_mul_ps(a, f2); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 24); c1 = _mm256_mul_ps(a, f3); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 32); c1 = _mm256_mul_ps(a, f4); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 40); c1 = _mm256_mul_ps(a, f5); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 48); c1 = _mm256_mul_ps(a, f6); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 56); c1 = _mm256_mul_ps(a, f7); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 64); c1 = _mm256_mul_ps(a, f8); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 72); c1 = _mm256_mul_ps(a, f9); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 80); c1 = _mm256_mul_ps(a, f10); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 88); c1 = _mm256_mul_ps(a, f11); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 96); c1 = _mm256_mul_ps(a, f12); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 104); c1 = _mm256_mul_ps(a, f13); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 112); c1 = _mm256_mul_ps(a, f14); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 120); c1 = _mm256_mul_ps(a, f15); c0 = _mm256_add_ps(c0, c1);
-		// add result to output
-		a = _mm256_load_ps(out + j);
-		c0 = _mm256_add_ps(c0, a);
-		_mm256_stream_ps(out + j, c0);
-		_img += 128;
-	}
-	_mm256_zeroupper();
-
-}
-
-inline void dotsum_unwrapped_5x5(const float *_img, const float *filter_ptr, float *out, const int outsize)
-{
-	_mm256_zeroupper();
-
-	const __m256 f0 = _mm256_broadcast_ss(&filter_ptr[0]); const __m256 f1 = _mm256_broadcast_ss(&filter_ptr[1]);
-	const __m256 f2 = _mm256_broadcast_ss(&filter_ptr[2]); const __m256 f3 = _mm256_broadcast_ss(&filter_ptr[3]);
-	const __m256 f4 = _mm256_broadcast_ss(&filter_ptr[4]); const __m256 f5 = _mm256_broadcast_ss(&filter_ptr[5]);
-	const __m256 f6 = _mm256_broadcast_ss(&filter_ptr[6]); const __m256 f7 = _mm256_broadcast_ss(&filter_ptr[7]);
-	const __m256 f8 = _mm256_broadcast_ss(&filter_ptr[8]); const __m256 f9 = _mm256_broadcast_ss(&filter_ptr[9]);
-	const __m256 f10 = _mm256_broadcast_ss(&filter_ptr[10]); const __m256 f11 = _mm256_broadcast_ss(&filter_ptr[11]);
-	const __m256 f12 = _mm256_broadcast_ss(&filter_ptr[12]); const __m256 f13 = _mm256_broadcast_ss(&filter_ptr[13]);
-	const __m256 f14 = _mm256_broadcast_ss(&filter_ptr[14]); const __m256 f15 = _mm256_broadcast_ss(&filter_ptr[15]);
-	const __m256 f16 = _mm256_broadcast_ss(&filter_ptr[16]); const __m256 f17 = _mm256_broadcast_ss(&filter_ptr[17]);
-	const __m256 f18 = _mm256_broadcast_ss(&filter_ptr[18]); const __m256 f19 = _mm256_broadcast_ss(&filter_ptr[19]);
-	const __m256 f20 = _mm256_broadcast_ss(&filter_ptr[20]); const __m256 f21 = _mm256_broadcast_ss(&filter_ptr[21]);
-	const __m256 f22 = _mm256_broadcast_ss(&filter_ptr[22]); const __m256 f23 = _mm256_broadcast_ss(&filter_ptr[23]);
-	const __m256 f24 = _mm256_broadcast_ss(&filter_ptr[24]);
-
-	for (int j = 0; j < outsize; j += 8)
-	{
-		__m256 a, c0, c1;
-
-		a = _mm256_load_ps(_img); c0 = _mm256_mul_ps(a, f0);
-
-		a = _mm256_load_ps(_img + 8); c1 = _mm256_mul_ps(a, f1); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 16); c1 = _mm256_mul_ps(a, f2); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 24); c1 = _mm256_mul_ps(a, f3); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 32); c1 = _mm256_mul_ps(a, f4); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 40); c1 = _mm256_mul_ps(a, f5); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 48); c1 = _mm256_mul_ps(a, f6); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 56); c1 = _mm256_mul_ps(a, f7); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 64); c1 = _mm256_mul_ps(a, f8); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 72); c1 = _mm256_mul_ps(a, f9); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 80); c1 = _mm256_mul_ps(a, f10); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 88); c1 = _mm256_mul_ps(a, f11); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 96); c1 = _mm256_mul_ps(a, f12); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 104); c1 = _mm256_mul_ps(a, f13); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 112); c1 = _mm256_mul_ps(a, f14); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 120); c1 = _mm256_mul_ps(a, f15); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 128); c1 = _mm256_mul_ps(a, f16); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 136); c1 = _mm256_mul_ps(a, f17); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 144); c1 = _mm256_mul_ps(a, f18); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 152); c1 = _mm256_mul_ps(a, f19); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 160); c1 = _mm256_mul_ps(a, f20); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 168); c1 = _mm256_mul_ps(a, f21); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 176); c1 = _mm256_mul_ps(a, f22); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 184); c1 = _mm256_mul_ps(a, f23); c0 = _mm256_add_ps(c0, c1);
-		a = _mm256_load_ps(_img + 192); c1 = _mm256_mul_ps(a, f24); c0 = _mm256_add_ps(c0, c1);
-
-		a = _mm256_load_ps(out + j);
-		c0 = _mm256_add_ps(c0, a);
-
-		_mm256_stream_ps(out + j, c0);
-		_img += 200;
-
-	}
-
-	_mm256_zeroupper();
-}
-
-inline void dotsum_unwrapped_7x7(const float *_img,  const float *filter_ptr, float *out, const int outsize)
-{
-
-	_mm256_zeroupper();
-	__m256 f[49];//=new __m256(s);
-	for(int i=0; i<49; i++) f[i]= _mm256_broadcast_ss(&filter_ptr[i]);
-
-	for (int j = 0; j < outsize; j += 8)
-	{
-		__m256 a, c0, c1;
-
-		a = _mm256_load_ps(_img);
-		c0 = _mm256_mul_ps(a, f[0]);
-		for(int i=1; i<49;i++)
-		{
-			a = _mm256_load_ps(_img + 8*i); c1 = _mm256_mul_ps(a, f[i]); c0 = _mm256_add_ps(c0, c1);
-		}
-
-		a = _mm256_load_ps(out + j);
-		c0 = _mm256_add_ps(c0, a);
-
-		_mm256_stream_ps(out + j, c0);
-		_img += 49*8;
-
-	}
-	_mm256_zeroupper();
-	//delete [] f;
-}
-
-#else // no AVX
 
 inline void dotsum_unwrapped_2x2(const float *_img, const float *filter_ptr, float *out, const int outsize)
 {
@@ -386,7 +194,6 @@ inline void dotsum_unwrapped_7x7(const float *_img, const float *filter_ptr, flo
 	dotsum_unwrapped_NxN(7, _img,  filter_ptr, out, outsize);
 }
 
-#endif
 
 
 // matrix class ---------------------------------------------------
@@ -463,7 +270,6 @@ public:
 		v.fill(0);
 
 		//float *new_x = new float[chans*w*h];
-#pragma omp parallel for num_threads(threads)
 		for(int k=0; k<chans; k++)
 		{
 			const int v_chan_offset=k*v.chan_stride;
@@ -529,7 +335,6 @@ public:
 	{
 		matrix v(w,h,chans);
 
-#pragma omp parallel for num_threads(threads)
 		for(int k=0; k<chans; k++)
 		{
 			for(int j=0; j<h; j++)
@@ -694,23 +499,11 @@ public:
 		for (int i = 0; i < _size; i++) x[i] -= m2.x[i];
 		return *this;
 	}
-#ifndef MOJO_AVX
 	// *= float
 	inline matrix operator *=(const float v) {
 		for (int i = 0; i < _size; i++) x[i] = x[i] * v;
 		return *this;
 	}
-
-
-#else
-	inline matrix operator *=(const float v) {
-		__m128  b;
-		b = _mm_set_ps(v, v, v, v);
-		for (int j = 0; j < _size; j += 4)
-			_mm_store_ps(x + j, _mm_mul_ps(_mm_load_ps(x + j), b));
-		return *this;
-	}
-#endif
 	// *= matrix
 	inline matrix operator *=(const matrix &v) {
 		for (int i = 0; i < _size; i++) x[i] = x[i] * v.x[i];
@@ -746,3 +539,4 @@ public:
 
 }// namespace
 
+#endif // _CORE_MATH_H_

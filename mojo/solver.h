@@ -26,7 +26,8 @@
 //    solver.h: stochastic optimization approaches
 // ==================================================================== mojo ==
 
-#pragma once
+#ifndef _SOLVER_H_
+#define _SOLVER_H_
 
 #include <math.h>
 #include <algorithm>
@@ -36,17 +37,9 @@
 
 #include "core_math.h"
 
-// hack for VS2010 to handle c++11 for(:)
-#if (_MSC_VER  == 1600)
-	#ifndef __for__
-	#define __for__ for each
-	#define __in__ in
-	#endif
-#else
-	#ifndef __for__
-	#define __for__ for
-	#define __in__ :
-	#endif
+#ifndef __for__
+#define __for__ for
+#define __in__ :
 #endif
 
 namespace mojo {
@@ -67,8 +60,6 @@ public:
 	virtual void increment_w(matrix *w,  int g, const matrix &dW, const float custom_factor=1.0f){}//, matrix *top){}
 	virtual void push_back(int w, int h, int c){}
 };
-
-#ifndef MOJO_NO_TRAINING
 
 
 class sgd: public solver
@@ -198,13 +189,7 @@ solver* new_solver(const char *type)
 	return NULL;
 }
 
-#else
-
-
-solver* new_solver(const char *type) {return NULL;}
-solver* new_solver(std::string act){return NULL;}
-
-#endif
-
 
 } // namespace
+
+#endif // _SOLVER_H_

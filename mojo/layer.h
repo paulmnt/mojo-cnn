@@ -27,7 +27,8 @@
 // ==================================================================== mojo ==
 
 
-#pragma once
+#ifndef _LAYER_H_
+#define _LAYER_H_
 
 #include <string>
 #include <sstream>
@@ -38,28 +39,6 @@
 namespace mojo
 {
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-	/*
-	double PCFreq = 0.0;
-	__int64 CounterStart = 0;
-
-	void StartCounter()
-	{
-		LARGE_INTEGER li;
-		if (!QueryPerformanceFrequency(&li)) return;
-		PCFreq = double(li.QuadPart) / 1000.0;
-		QueryPerformanceCounter(&li);
-		CounterStart = li.QuadPart;
-	}
-	double GetCounter()
-	{
-		LARGE_INTEGER li;
-		QueryPerformanceCounter(&li);
-		return double(li.QuadPart - CounterStart) / PCFreq;
-	}
-	*/
 
 #define int2str(a) std::to_string((long long)a)
 #define float2str(a) std::to_string((long double)a)
@@ -92,7 +71,6 @@ public:
 	std::string name;
 	// index of W matrix, index of connected layer
 	std::vector<std::pair<int,base_layer*>> forward_linked_layers;
-#ifndef MOJO_NO_TRAINING
 	matrix delta;
 	std::vector<std::pair<int,base_layer*>> backward_linked_layers;
 
@@ -100,24 +78,27 @@ public:
 	virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train =1)=0;
 	virtual void update_bias(const matrix &newbias, float alpha) {};
 
-#endif
 	virtual void accumulate_signal(const base_layer &top_node, const matrix &w, const int train =0) =0;
 
-	base_layer(const char* layer_name, int _w, int _h=1, int _c=1) : node(_w, _h, _c),  p_act(NULL), name(layer_name), _has_weights(true), pad_cols(0), pad_rows(0), _learning_factor(1.f), _use_bias(false), _thread_count(1)
-		#ifndef MOJO_NO_TRAINING
-		,delta(_w,_h,_c,NULL,false)
-		#endif
-	{
-	}
+	base_layer(const char* layer_name, int _w, int _h=1, int _c=1)
+		: node(_w, _h, _c),
+		p_act(NULL),
+		name(layer_name),
+		_has_weights(true),
+		pad_cols(0),
+		pad_rows(0),
+		_learning_factor(1.f),
+		_use_bias(false),
+		_thread_count(1),
+		delta(_w,_h,_c,NULL,false)
+		{}
 
 	virtual void resize(int _w, int _h=1, int _c=1)
 	{
 		if (_w<1) _w = 1; if (_h<1) _h = 1; if (_c<1) _c = 1;
 		node =matrix(_w,_h,_c);
 		if (_use_bias) { bias = matrix(_w, _h, _c); bias.fill(0.); }
-		#ifndef MOJO_NO_TRAINING
 		delta =matrix(_w,_h,_c,NULL,false);
-		#endif
 	}
 
 	virtual ~base_layer(){if(p_act) delete p_act;}
@@ -142,9 +123,7 @@ public:
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
 		top.forward_linked_layers.push_back(std::make_pair((int)weight_mat_index,this));
-		#ifndef MOJO_NO_TRAINING
 		backward_linked_layers.push_back(std::make_pair((int)weight_mat_index,&top));
-		#endif
 		if (_has_weights)
 		{
 			int rows = node.cols*node.rows*node.chans;
@@ -204,7 +183,6 @@ public:
 		if(top.node.chan_stride!=ts2)
 		{
 			//std::cout << "here: " << top.node.chan_stride << ","<< ts2 << ","<< top.node.chans << ":";
-			MOJO_THREAD_THIS_LOOP(_thread_count)
 			for (int j = 0; j < s; j++)
 			{
 				for (int i = 0; i < top.node.chans; i++)
@@ -227,11 +205,9 @@ public:
 		}
 		else
 		{
-		MOJO_THREAD_THIS_LOOP(_thread_count)
 		for (int j = 0; j < s; j++)  node.x[j] += dot(top.node.x, w.x+j*w.cols, ts);
 		}
 	}
-#ifndef MOJO_NO_TRAINING
 	virtual void update_bias(const matrix &newbias, float alpha) {
 		for (int j = 0; j < bias.size(); j++) bias.x[j] -= newbias.x[j] * alpha;
 	}
@@ -294,7 +270,6 @@ public:
 			}
 		}
 	}
-#endif
 
 };
 
@@ -449,7 +424,6 @@ public:
 			}
 		}
 	}
-#ifndef MOJO_NO_TRAINING
 
 	// this is upsampling
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train =1)
@@ -458,7 +432,6 @@ public:
 		const int s = (int)_max_map.size();
 		for(int k=0; k<s; k++) top.delta.x[p_map[k]]+=delta.x[k];
 	}
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -612,7 +585,6 @@ public:
 			}
 		}
 	}
-#ifndef MOJO_NO_TRAINING
 
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1)
 	{
@@ -620,7 +592,6 @@ public:
 		delta *= drop_mask;
 		top.delta += delta;
 	}
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -665,9 +636,7 @@ public:
 		int w = (top.node.cols) / 1;
 		int h = (top.node.rows) / 1;
 		resize(w, h, top.node.chans);
-#ifndef MOJO_NO_TRAINING
 		backward_linked_layers.push_back(std::make_pair(weight_mat_index, &top));
-#endif
 		return NULL;
 		//return new matrix(1, 1, 1);
 	}
@@ -705,7 +674,6 @@ public:
 			max_map.x[i] = (float)maxk;
 				}
 			}
-#ifndef MOJO_NO_TRAINING
 
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1)
 	{
@@ -724,7 +692,6 @@ public:
 		}
 
 	}
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -760,19 +727,15 @@ public:
 
 		bias =matrix(1,1,_c);
 		bias.fill(0.);
-		#ifndef MOJO_NO_TRAINING
 		if(kernel_rows*kernel_cols==1) delta =matrix(_w,_h,_c);  /// use special channel aligned matrix object
 		else delta =matrix(_w,_h,_c,NULL,true);  /// use special channel aligned matrix object
-		#endif
 	}
 
 	// this connection work won't work with multiple top layers (yet)
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
 		top.forward_linked_layers.push_back(std::make_pair(weight_mat_index,this));
-		#ifndef MOJO_NO_TRAINING
 		backward_linked_layers.push_back(std::make_pair(weight_mat_index,&top));
-		#endif
 		// re-shuffle these things so weights of size kernel w,h,kerns - node of size see below
 		//int total_kernels=top.node.chans*node.chans;
 		kernels_per_map += top.node.chans;
@@ -788,7 +751,6 @@ public:
 		const int map_stride = node.chan_stride;
 		const int _maps = maps;
 
-		MOJO_THREAD_THIS_LOOP(_thread_count)
 		for (int c=0; c<_maps; c++)
 		{
 			p_act->fc(&node.x[c*map_stride],map_size,bias.x[c]);
@@ -827,22 +789,18 @@ public:
 
 				if(kernel_rows==2)
 				{
-					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 					for (int map = 0; map < map_cnt; map+=1) dotsum_unwrapped_2x2(img_ptr.x, ww+map*kernel_size, node.x + map_stride*map, outsize);
 				}
 				else if(kernel_rows==3)
 				{
-					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 					for (int map = 0; map < map_cnt; map+=1) dotsum_unwrapped_3x3(img_ptr.x, ww+map*kernel_size, node.x + map_stride*map, outsize);
 				}
 				else if(kernel_rows==4)
 				{
-					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 					for (int map = 0; map < map_cnt; map+=1) dotsum_unwrapped_4x4(img_ptr.x, ww+map*kernel_size, node.x + map_stride*map, outsize);
 				}
 				else //(kernel_rows==5)
 				{
-					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 					for (int map = 0; map < map_cnt; map+=1) dotsum_unwrapped_5x5(img_ptr.x, ww+map*kernel_size, node.x + map_stride*map, outsize);
 				}
 			}
@@ -853,7 +811,6 @@ public:
 			{
 				const float *_top_node = &top.node.x[k*kstep];
 
-				//MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 				for (int map = 0; map < map_cnt; map++)
 				{
 					const float cw = w.x[(map + k*maps)*kernel_size];
@@ -868,7 +825,6 @@ public:
 			{
 				for(int k=0; k<top_chans; k++) // input channels --- same as kernels_per_map - kern for each input
 				{
-					MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
 					for(int j=0; j<node_size; j+= stride) // input h
  						for(int i=0; i<node_size; i+= stride) // intput w
 							node.x[i+(j)*node.cols +map_stride*map]+=
@@ -884,8 +840,6 @@ public:
 
 	}
 
-
-#ifndef MOJO_NO_TRAINING
 
 	// convolution::distribute_delta
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train=1)
@@ -1179,8 +1133,6 @@ public:
 			} // all maps=chans
 		}
 	}
-
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -1221,18 +1173,14 @@ public:
 
 		conv_delta = matrix(_w*_pool, _h*_pool, maps);
 
-#ifndef MOJO_NO_TRAINING
 		delta = matrix(_w, _h, _c, NULL, true);
-#endif
 	}
 
 	// this connection work won't work with multiple top layers (yet)
 	virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 	{
 		top.forward_linked_layers.push_back(std::make_pair(weight_mat_index, this));
-#ifndef MOJO_NO_TRAINING
 		backward_linked_layers.push_back(std::make_pair(weight_mat_index, &top));
-#endif
 		// re-shuffle these things so weights of size kernel w,h,kerns - node of size see below
 		//int total_kernels=top.node.chans*node.chans;
 		kernels_per_map += top.node.chans;
@@ -1247,7 +1195,6 @@ public:
 		const int map_stride = node.chan_stride;
 		const int _maps = maps;
 
-		MOJO_THREAD_THIS_LOOP(_thread_count)
 		for (int c=0; c<_maps; c++) p_act->fc(&node.x[c*map_stride],map_size,bias.x[c]);
 	}
 
@@ -1277,13 +1224,10 @@ public:
 		imgsum_ptr.fill(0);
 
 		matrix img_ptr( top.node.cols,  top.node.cols, 2*2, NULL, true);
-//#pragma omp parallel for schedule(guided) num_threads(_thread_count)
 		for (int k = 0; k < top_chans; k++) // input channels --- same as kernels_per_map - kern for each input
 		{
 			unwrap_aligned_NxN(2, img_ptr.x, &top.node.x[k*kstep], jstep, 1);
 
-//			MOJO_THREAD_THIS_LOOP_DYNAMIC(_thread_count)
-MOJO_THREAD_THIS_LOOP(_thread_count)
 			for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
 			{
 				//std::cout << omp_get_thread_num();
@@ -1320,7 +1264,6 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 	}
 
 
-#ifndef MOJO_NO_TRAINING
 
 	// convolution::distribute_delta
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1)
@@ -1438,7 +1381,6 @@ MOJO_THREAD_THIS_LOOP(_thread_count)
 
 	}
 
-#endif
 };
 
 //----------------------------------------------------------------------------------------------------------
@@ -1521,7 +1463,6 @@ public:
 			memcpy(node.x + node.chan_stride*map_offset, m.x, sizeof(float)*m.size());
 		}
 	}
-#ifndef MOJO_NO_TRAINING
 
 	virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1)
 	{
@@ -1551,7 +1492,6 @@ public:
 		}
 
 	}
-#endif
 };
 
 //--------------------------------------------------
@@ -1652,3 +1592,5 @@ base_layer *new_layer(const char *layer_name, const char *config)
 
 
 } // namespace
+
+#endif // _LAYER_H_

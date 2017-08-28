@@ -26,7 +26,8 @@
 //    activation.h:  neuron activation functions
 // ==================================================================== mojo ==
 
-#pragma once
+#ifndef _ACTIVATION_H_
+#define _ACTIVATION_H_
 
 #include <math.h>
 #include <algorithm>
@@ -376,3 +377,5 @@ activation_function* new_activation_function(const char *type)
 }
 
 } // namespace
+
+#endif // _ACTIVATION_H_

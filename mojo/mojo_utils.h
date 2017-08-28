@@ -26,10 +26,9 @@
 //    mojo.h:  include this one file to use mojo cnn without OpenMP
 // ==================================================================== mojo ==
 
-#ifndef _MOJO_H_
-#define _MOJO_H_
+#ifndef _MOJO_UTIL_H_
+#define _MOJO_UTIL_H_
 
-#include "core_math.h"
-#include "network.h" // this is the important thing
+#include "util.h"
 
-#endif // _MOJO_H_
+#endif // _MOJO_UTIL_H_
