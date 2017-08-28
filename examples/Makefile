@@ -1,3 +1,28 @@
+#
+# This Makefile shows some tricks useful when more than one target program has
+# to be compiled and most of the rules are shared. Note, however, that for a
+# single executable with single source file a simpler Makefile would work as
+# well. Nevertheless, knowing these tricks will allow you to minimize repeated
+# lines of code.
+#
+
+#
+# Automatic variables in make:
+#
+# $@ -> the target
+# $< -> first dependency
+# $^ -> all dependencies
+#
+
+#
+# Builtin functions in make:
+#
+# wildcard -> all files matching the pattern
+# subst -> replace string
+# $(VAR:suffix_a=suffix_b) -> replace suffix
+# %-suffix_a: %suffix_b %suffix_c -> replace target suffix (suffix_a) with suffix_b and suffix_c to create the corresponding dependency
+# @ -> hide the corresponding command when running the target
+#
 
 #
 # Aliases
@@ -24,26 +49,19 @@ OPENCV ?= /opt/opencv
 
 
 #
-# Compile
+# Compile and Link Flags
+# Keep the variable name as below. This allows make to automatically infer
+# compiler and linker rules.
 #
 
+# Include folders for header files
 INCDIR = -I$(OPENCV)/include -I../mojo/
 
+# Compile flags
 CXXFLAGS ?= -std=c++11 -O3
 CXXFLAGS += $(INCDIR)
-ifdef OMP
-CXXFLAGS += -fopenmp -DMOJO_OMP
-endif
-ifdef OCV2
-CXXFLAGS += -DMOJO_CV2
-endif
-ifdef OCV3
-CXXFLAGS += -DMOJO_CV3
-endif
-ifdef AVX
-CXXFLAGS += -DMOJO_AVX -msse4 -mavx
-endif
 
+# Link flags
 LDLIBS = -L$(OPENCV)/lib
 
 LDFLAGS = \
@@ -61,32 +79,41 @@ LDFLAGS = \
 	-lopencv_imgproc \
 	-lopencv_core
 
-SRCS := test.cpp train_mnist.cpp train_cifar.cpp vgg.cpp
+# List of source files.
+SRCS := vgg.cpp
+
+# In this Makefile each source produces a corresponding executable.
 OBJS := $(SRCS:.cpp=)
+
+# Find all headers for dependency (i.e. recompile if one header changes)
 HDRS := $(wildcard ../mojo/*.h) $(wildcard ./*.h)
 
+# The first target gets executed by default when typing simply make.
 all: $(OBJS)
 
+# Let mak know the suffix of source and object files (if any)
 .SUFFIX: .c .cpp
 
+# Compile
 # The following rules are inferred by make. Overriding to add $(QUIET_CXX)
+# Try removing the following target and you will still be able to compile!
 .cpp:
 	$(QUIET_CXX) $(CXX) $(CXXFLAGS) $< -o $@ $(LDLIBS) $(LDFLAGS)
 
+# Add header files dependency
 $(OBJS): $(HDRS)
 
+# Create a target to clean from compiled objects
 clean:
 	$(QUIET_CLEAN) $(RM) $(OBJS)
 
+# Create a target to also clean from data and or results
 distclean: clean
-	$(QUIET_CLEAN) $(RM) \
-	../data/cifar-10-batches-bin \
-	../data/cifar-10-binary.tar.gz \
-	../data/mnist \
-	$(MOJO_PRETRAINED) \
-	../models/snapshots/*.htm \
-	../models/snapshots/*.txt
+	$(QUIET_CLEAN) $(RM) $(MOJO_PRETRAINED)
 
+# Declare as .PHONY all targets that do not generate a file whose name matches
+# the name of the target (e.g. make clean won't generate a file named clean,
+# while make vgg will compile an object file named vgg)
 .PHONY: all clean distclean
 
 
@@ -94,54 +121,40 @@ distclean: clean
 # Get Data Sets and Pretrained Models
 #
 
-MNIST_DATA := ../data/mnist/train-labels-idx1-ubyte \
-		../data/mnist/t10k-labels-idx1-ubyte \
-		../data/mnist/train-images-idx3-ubyte \
-		../data/mnist/t10k-images-idx3-ubyte
+# List of data files to download (this list could contain more files)
+MOJO_PRETRAINED := ../models/vgg16.mojo
 
-MOJO_PRETRAINED := ../models/cifar_deepcnet.mojo \
-		../models/mnist_deepcnet.mojo \
-		../models/vgg16.mojo
-
-$(MNIST_DATA):
-	$(QUIET_MKDIR) mkdir -p ../data/mnist
-	$(QUIET_WGET) wget $(subst ../data,http://yann.lecun.com/exdb,$@.gz) -O $@.gz
-	$(QUIET_UNZIP) gzip -d $@.gz
-
-../data/cifar-10-binary.tar.gz:
-	$(QUIET_WGET) wget $(subst ../data,https://www.cs.toronto.edu/~kriz/, $@) -O $@
-
-
-../data/cifar-10-batches-bin: ../data/cifar-10-binary.tar.gz
-	$(QUIET_UNZIP) tar xf $< -C ../data
-	@touch $@
-
+# Define multiple targets with the same rule
 $(MOJO_PRETRAINED):
 	$(QUIET_WGET) wget $(subst ../models,http://espdev.cs.columbia.edu/data_sets,$@) -O $@
 
-data: $(MNIST_DATA) ../data/cifar-10-batches-bin $(MOJO_PRETRAINED)
+# Add a PHONY to get all data at once
+data: $(MOJO_PRETRAINED)
 
 .PHONY: data
+
+
+#
+# Set data dependencies for each target application
+#
+
+# Declare specific dependency for each target executable
+vgg-data: ../data/dog.jpg ../models/vgg16.mojo
 
 
 #
 # Run
 #
 
+# Define list of tharges by replacing the suffix
 RUNS := $(SRCS:.cpp=-run)
 
+# Declare multiple PHONY targets to run compiled programs % is used to add
+# dependencies based on the target name.  (e.g. vgg-run depends on vgg-data and
+# vgg). Note that we add OPENCV/lib to LD_LIBRARY_PATH because libraries are
+# dynamically linked when the program is loaded into memory and not at compile
+# time.
 $(RUNS): %-run : %-data %
-	@LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(OPENCV)/lib ./$(@:-run=)
-
-test-data: ../data/mnist/t10k-labels-idx1-ubyte \
-	../data/mnist/t10k-images-idx3-ubyte \
-	../models/cifar_deepcnet.mojo \
-	../models/mnist_deepcnet.mojo
-
-vgg-data: ../data/dog.jpg ../models/vgg16.mojo
-
-train_mnist-data: $(MNIST_DATA)
-
-train_cifar-data:  ../data/cifar-10-batches-bin
+	$(QUIET_RUN) LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(OPENCV)/lib ./$(@:-run=)
 
 .PHONY: $(RUNS)
