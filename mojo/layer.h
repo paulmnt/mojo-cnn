@@ -54,7 +54,6 @@ protected:
 	bool _has_weights;
 	bool _use_bias;
 	float _learning_factor;
-	int _thread_count;
 
 public:
 	activation_function *p_act;
@@ -62,7 +61,6 @@ public:
 	bool has_weights() {return _has_weights;}
 	bool use_bias() { return _use_bias; }
 	void set_learning_factor(float f=1.0f) {_learning_factor = 1.f;}
-	void set_threading(int thread_count) {_thread_count=thread_count; if(_thread_count<1) _thread_count=1;}
 
 	int pad_cols, pad_rows;
 	matrix node;
@@ -89,7 +87,6 @@ public:
 		pad_rows(0),
 		_learning_factor(1.f),
 		_use_bias(false),
-		_thread_count(1),
 		delta(_w,_h,_c,NULL,false)
 		{}
 
@@ -1230,7 +1227,6 @@ public:
 
 			for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
 			{
-				//std::cout << omp_get_thread_num();
 				float *out = imgsum_ptr.x  + imgsum_ptr.chan_stride*map;
 				dotsum_unwrapped_2x2(img_ptr.x, &w.x[(map + k*maps)*kernel_size], out, (jstep-1)*(jstep-1));
 			}
@@ -1447,7 +1443,7 @@ public:
 
 		if (padx+ padx_ex > 0 || pady+ pady_ex > 0 )
 		{
-			matrix m = top.node.pad(padx, pady, padx+ padx_ex, pady+pady_ex, _pad_type, _thread_count);
+			matrix m = top.node.pad(padx, pady, padx+ padx_ex, pady+pady_ex, _pad_type);
 			memcpy(node.x + node.chan_stride*map_offset, m.x, sizeof(float)*m.size());
 		}
 		else if((node.cols == top.node.cols) && (node.rows == top.node.rows))
@@ -1459,7 +1455,7 @@ public:
 			// crop
 			int dx = abs(padx) / 2;
 			int dy = abs(pady) / 2;
-			matrix m = top.node.crop(dx, dy, node.cols, node.rows, _thread_count);
+			matrix m = top.node.crop(dx, dy, node.cols, node.rows);
 			memcpy(node.x + node.chan_stride*map_offset, m.x, sizeof(float)*m.size());
 		}
 	}

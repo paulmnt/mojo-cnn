@@ -243,10 +243,10 @@ public:
 	// copy constructor - deep copy
 	matrix( const matrix &m) : cols(m.cols), rows(m.rows), chan_aligned(m.chan_aligned), chans(m.chans), chan_stride(m.chan_stride), _size(m._size), _capacity(m._size)   {x = new_x(_size); memcpy(x,m.x,sizeof(float)*_size); /*empty_chan = new unsigned char[chans]; memcpy(empty_chan, m.empty_chan, chans);*/} // { v=m.v; x=(float*)v.data();}
 	// copy and pad constructor
-	matrix( const matrix &m, int pad_cols, int pad_rows, mojo::pad_type padding= mojo::zero, int threads=1) : cols(m.cols), rows(m.rows), chans(m.chans), chan_aligned(m.chan_aligned), chan_stride(m.chan_stride), _size(m._size), _capacity(m._size)
+	matrix( const matrix &m, int pad_cols, int pad_rows, mojo::pad_type padding= mojo::zero) : cols(m.cols), rows(m.rows), chans(m.chans), chan_aligned(m.chan_aligned), chan_stride(m.chan_stride), _size(m._size), _capacity(m._size)
 	{
 		x = new_x(_size); memcpy(x, m.x, sizeof(float)*_size);
-		*this = pad(pad_cols, pad_rows, padding, threads);
+		*this = pad(pad_cols, pad_rows, padding);
 	}
 
 	~matrix() { if (x) delete_x(); }
@@ -260,11 +260,11 @@ public:
 	// if edge_pad==0, then the padded area is just 0.
 	// if edge_pad==1 it fills with edge pixel colors
 	// if edge_pad==2 it fills with median edge pixel color
-	matrix pad(int dx, int dy, mojo::pad_type edge_pad = mojo::zero, int threads=1) const
+	matrix pad(int dx, int dy, mojo::pad_type edge_pad = mojo::zero) const
 	{
-		return pad(dx, dy, dx, dy, edge_pad, threads);
+		return pad(dx, dy, dx, dy, edge_pad);
 	}
-	matrix pad(int dx, int dy, int dx_right, int dy_bottom, mojo::pad_type edge_pad = mojo::zero, int threads=1) const
+	matrix pad(int dx, int dy, int dx_right, int dy_bottom, mojo::pad_type edge_pad = mojo::zero) const
 	{
 		matrix v(cols+dx+dx_right,rows+dy+dy_bottom,chans);//,NULL,this->chan_aligned);
 		v.fill(0);
@@ -331,7 +331,7 @@ public:
 		return v;
 	}
 
-	matrix crop(int dx, int dy, int w, int h, int threads=1) const
+	matrix crop(int dx, int dy, int w, int h) const
 	{
 		matrix v(w,h,chans);
 
