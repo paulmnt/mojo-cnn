@@ -58,7 +58,7 @@ OPENCV ?= /opt/opencv
 INCDIR = -I$(OPENCV)/include -I../mojo/
 
 # Compile flags
-CXXFLAGS ?= -std=c++11 -O3 -DMOJO_CV3
+CXXFLAGS ?= -std=c++11 -O3
 CXXFLAGS += $(INCDIR)
 
 # Link flags
