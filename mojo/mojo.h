@@ -30,6 +30,6 @@
 #define _MOJO_H_
 
 #include "core_math.h"
-#include "network.h" // this is the important thing
+#include "network.h"
 
 #endif // _MOJO_H_
