@@ -40,8 +40,6 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 
-#pragma comment(lib, "opencv_world310")
-
 namespace mojo
 {
 
@@ -147,7 +145,7 @@ public:
 		std::string data = "";
 		float min = 100;
 		float max_10 = 0;
-		for (int i = 0; i < log.size(); i++)
+		for (int i = 0; i < (int) log.size(); i++)
 		{
 			if ((100.f - log[i].train_accurracy_est) < min) min = (100.f - log[i].train_accurracy_est);
 			if ((100.f - log[i].test_accurracy) < min) min = (100.f - log[i].test_accurracy);
@@ -432,13 +430,9 @@ cv::Mat colorize(cv::Mat im, mojo::mojo_palette color_palette = mojo::gray)
 
 mojo::matrix draw_cnn_weights(mojo::network &cnn, int layer_index, mojo::mojo_palette color_palette=mojo::gray)
 {
-	int w = (int)cnn.W.size();
 	cv::Mat im;
-
-
 	std::vector <cv::Mat> im_layers;
 
-	int layers = (int)cnn.layer_sets[0].size();
 	//for (int k = 0; k < layers; k++)
 	int k=layer_index-1;
 	{
@@ -542,7 +536,7 @@ mojo::matrix draw_cnn_state(mojo::network &cnn, int layer_index, mojo::mojo_pale
 	int s = im_layers[0].cols;
 	cv::Mat tmp(s + 2, (int)im_layers.size()*(1+s) + 1, CV_8UC1);// = im.clone();
 	tmp = 255;
-	for (int i = 0; i < im_layers.size(); i++)
+	for (int i = 0; i < (int) im_layers.size(); i++)
 	{
 		// make colors go 0 to 254
 		double min, max;

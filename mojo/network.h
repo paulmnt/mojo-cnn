@@ -103,8 +103,8 @@ class network
 	static const int MAIN_LAYER_SET = 0;
 
 	// training related stuff
-	int _batch_size;   // determines number of dW sets
-	float _skip_energy_level;
+	float _skip_energy_level;   // determines number of dW sets
+	int _batch_size;
 	bool _smart_train;
 	std::vector <float> _running_E;
 	double _running_sum_E;
@@ -584,16 +584,13 @@ public:
 		std::string s;
 		s = getcleanline(ifs);
 		int layer_count;
-		int version = 0;
 		if (s.compare("mojo01")==0)
 		{
 			s = getcleanline(ifs);
 			layer_count = atoi(s.c_str());
-			version = 1;
 		}
 		else if (s.compare("mojo:") == 0)
 		{
-			version = -1;
 			int cnt = 1;
 
 			while (!ifs.eof())
@@ -741,8 +738,8 @@ public:
 	int get_next_open_batch()
 	{
 		int reserved = 0;
-		int filled = 0;
-		for (int i = 0; i<batch_open.size(); i++)
+		unsigned filled = 0;
+		for (int i = 0; i < (int) batch_open.size(); i++)
 		{
 			if (batch_open[i] == BATCH_FREE) return i;
 			if (batch_open[i] == BATCH_RESERVED) reserved++;
@@ -1081,8 +1078,6 @@ public:
 		{
 
 			augmented_input.resize(in_size, 1, 1);
-			float s = ((float)(rand() % 101) / 50.f - 1.f)*augment_scale;
-			float t = ((float)(rand() % 101) / 50.f - 1.f)*augment_theta;
 			bool flip_h = ((rand() % 2)*augment_h_flip) ? true: false;
 			bool flip_v = ((rand() % 2)*augment_v_flip) ? true: false;
 			int shift_x = (rand() % (augment_x * 2 + 1)) - augment_x;
@@ -1174,7 +1169,6 @@ public:
 		const int last_layer_index = layer_cnt - 1;
 		base_layer *layer = layer_sets[0][last_layer_index];
 		const int layer_node_size = layer->node.size();
-		const int layer_delta_size = layer->delta.size();
 
 		if (dynamic_cast<dropout_layer*> (layer) != NULL) bail("can't have dropout on last layer");
 
@@ -1251,15 +1245,12 @@ public:
 
 		mojo::matrix augmented_input = make_input(in);
 
-		float *input = augmented_input.x;
-
 		// get next free mini_batch slot
 		// this is tied to the current state of the model
 		int my_batch_index = reserve_next_batch();
 		// out of data or an error if index is negative
 		if (my_batch_index < 0) return false;
 		// run through forward to get nodes activated
-		float *out=forward(in, 1);
 
 		// set all deltas to zero
 		__for__(auto layer __in__ layer_sets[0]) layer->delta.fill(0.f);

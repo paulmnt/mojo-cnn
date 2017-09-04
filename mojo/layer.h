@@ -79,14 +79,14 @@ public:
 	virtual void accumulate_signal(const base_layer &top_node, const matrix &w, const int train =0) =0;
 
 	base_layer(const char* layer_name, int _w, int _h=1, int _c=1)
-		: node(_w, _h, _c),
+		: _has_weights(true),
+		_use_bias(false),
+		_learning_factor(1.f),
 		p_act(NULL),
-		name(layer_name),
-		_has_weights(true),
 		pad_cols(0),
 		pad_rows(0),
-		_learning_factor(1.f),
-		_use_bias(false),
+		node(_w, _h, _c),
+		name(layer_name),
 		delta(_w,_h,_c,NULL,false)
 		{}
 
@@ -644,7 +644,6 @@ public:
 	// different dropouts for each mininbatch... don't know if that matters...
 	virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
 	{
-		const float *top_node = top.node.x;
 		const int chan_size = top.node.rows*top.node.cols;
 		//const int pool_offset = top.node.chans / _pool;
 		const int s = chan_size*top.node.chans / _pool;
@@ -763,17 +762,13 @@ public:
 		const int jstep=top.node.cols;
 		//int output_index=0;
 		const int kernel_size=kernel_cols*kernel_rows;
-		const int kernel_map_step = kernel_size*kernels_per_map;
 		const int map_size=node.cols*node.rows;
 		const int map_stride = node.chan_stride;
 
-		const float *_w = w.x;
 		const int top_chans = top.node.chans;
 		const int map_cnt=maps;
-		const int w_size = kernel_cols;
 		const int stride = _stride;
 		const int node_size= node.cols;
-		const int top_node_size = top.node.cols;
 		const int outsize = node_size*node_size;
 
 		if(kernel_rows>=2 && (kernel_rows<=5))
@@ -850,14 +845,10 @@ public:
 		const int kstep=top.delta.chan_stride;
 
 		const int jstep=top.delta.cols;
-		const int output_index=0;
 		const int kernel_size=kernel_cols*kernel_rows;
-		const int kernel_map_step = kernel_size*kernels_per_map;
-		const int map_size=delta_pad.cols*delta_pad.rows;
 		const int map_stride=delta_pad.chan_stride;
 
 		const float *_w = w.x;
-		const int w_size = kernel_cols;
 		const int delta_size = delta_pad.cols;
 		const int map_cnt=maps;
 		const int top_delta_size = top.delta.rows;
@@ -1022,18 +1013,13 @@ public:
 	{
 		int kstep=top.delta.chan_stride;
 		int jstep=top.delta.cols;
-		int output_index=0;
 		int kernel_size=kernel_cols*kernel_rows;
-		int kernel_map_step = kernel_size*kernels_per_map;
-		int map_size=delta.cols*delta.rows;
 		int map_stride=delta.chan_stride;
 
 		dw.resize(kernel_cols, kernel_rows,kernels_per_map*maps);
 		dw.fill(0);
 
 		// node x already init to 0
-		output_index=0;
-		const int stride = _stride;
 		const int top_node_size= top.node.cols;
 		const int node_size = node.rows;
 		const int delta_size = delta.cols;
@@ -1201,20 +1187,12 @@ public:
 		const int jstep = top.node.cols;
 		//int output_index=0;
 		const int kernel_size = kernel_cols*kernel_rows;
-		const int kernel_map_step = kernel_size*kernels_per_map;
 
-		const int pool_map_size = node.cols*node.rows;
 		const int pool_map_stride = node.chan_stride;
-		const float *_w = w.x;
 		const int top_chans = top.node.chans;
 		const int map_cnt = maps;
-		const int w_size = kernel_cols;
-		const int stride = _stride;
 
 		const int conv_size = node.cols * _pool;
-		const int pool_size = node.cols;
-		const int top_node_size = top.node.cols;
-		const int outsize = pool_size*pool_size;
 		int *p_map = _max_map.data();
 
 		matrix imgsum_ptr(jstep-1,jstep-1,maps,NULL,true);
@@ -1269,12 +1247,8 @@ public:
 		//		top_delta.x[s] += bottom_delta.x[t]*w.x[s+t*w.cols];
 
 		const int kstep = top.delta.chan_stride;
-		const int jstep = top.delta.cols;
-		const int output_index = 0;
 		const int kernel_size = kernel_cols*kernel_rows;
-		const int kernel_map_step = kernel_size*kernels_per_map;
 		const float *_w = w.x;
-		const int w_size = kernel_cols;
 		const int map_cnt = maps;
 		const int top_delta_size = top.delta.rows;
 		const int top_delta_chans = top.delta.chans;
@@ -1297,7 +1271,6 @@ public:
 
 		matrix delta_pad(conv_delta, pad_cols, pad_rows);
 
-		const int map_size = delta_pad.cols*delta_pad.rows;
 		const int map_stride = delta_pad.chan_stride;
 		const int delta_size = delta_pad.cols;
 
@@ -1338,17 +1311,13 @@ public:
 	{
 		int kstep = top.delta.cols*top.delta.rows;
 		int jstep = top.delta.cols;
-		int output_index = 0;
 		int kernel_size = kernel_cols*kernel_rows;
-		int kernel_map_step = kernel_size*kernels_per_map;
 		int map_size = conv_delta.cols*conv_delta.rows;
 
 		dw.resize(kernel_cols, kernel_rows, kernels_per_map*maps);
 		dw.fill(0);
 
 		// node x already init to 0
-		output_index = 0;
-		const int stride = _stride;
 		const int top_node_size = top.node.cols;
 		const int delta_size = conv_delta.cols;
 		const int kern_len = kernel_cols;
@@ -1422,8 +1391,6 @@ public:
 
 	virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
 	{
-		const float *top_node = top.node.x;
-		const int size = node.rows*node.cols;
 
 		int opadx = node.cols - top.node.cols;
 		int opady = node.rows - top.node.rows;

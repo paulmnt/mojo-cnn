@@ -136,14 +136,16 @@ public:
 
 class adam: public solver
 {
-	float b1_t, b2_t;
-	const float b1, b2;
+	const float b1;
+	float b1_t;
+	const float b2;
+	float b2_t;
 	// persistent variables that mirror size of weight matrix
 	std::vector<matrix *> G1;
 	std::vector<matrix *> G2;
 public:
 	static const char *name(){return "adam";}
-	adam(): b1(0.9f), b1_t(0.9f), b2(0.999f), b2_t(0.999f), solver()	{}
+        adam(): solver(), b1(0.9f), b1_t(0.9f), b2(0.999f), b2_t(0.999f)	{}
 	virtual ~adam(){__for__(auto g __in__ G1) delete g; __for__(auto g __in__ G2) delete g;}
 
 	virtual void reset()

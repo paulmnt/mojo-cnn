@@ -213,8 +213,8 @@ class matrix
 public:
 	std::string _name;
 	int cols, rows, chans;
-	int chan_stride;
 	int chan_aligned;
+	int chan_stride;
 	float *x;
 	// size must be divisible by 8 for AVX
 	virtual int calc_chan_stride(int w, int h)
@@ -229,8 +229,15 @@ public:
 		else return w*h;
 	}
 
-	matrix( ): cols(0), rows(0), chans(0), _size(0), _capacity(0), chan_stride(0), x(NULL), chan_aligned(0)/*, empty_chan(NULL)*/{}
-
+	matrix( )
+		: _size(0),
+		_capacity(0),
+		cols(0),
+		rows(0),
+		chans(0),
+		chan_aligned(0),
+		chan_stride(0),
+		x(NULL)/*, empty_chan(NULL)*/{}
 
 	matrix( int _w, int _h, int _c=1, const float *data=NULL, int align_chan=0): cols(_w), rows(_h), chans(_c)
 	{
@@ -241,15 +248,33 @@ public:
 	}
 
 	// copy constructor - deep copy
-	matrix( const matrix &m) : cols(m.cols), rows(m.rows), chan_aligned(m.chan_aligned), chans(m.chans), chan_stride(m.chan_stride), _size(m._size), _capacity(m._size)   {x = new_x(_size); memcpy(x,m.x,sizeof(float)*_size); /*empty_chan = new unsigned char[chans]; memcpy(empty_chan, m.empty_chan, chans);*/} // { v=m.v; x=(float*)v.data();}
+	matrix( const matrix &m)
+		: _size(m._size),
+		_capacity(m._size),
+		cols(m.cols),
+		rows(m.rows),
+		chans(m.chans),
+		chan_aligned(m.chan_aligned),
+		chan_stride(m.chan_stride)
+	{
+		x = new_x(_size);
+		memcpy(x,m.x,sizeof(float)*_size); /*empty_chan = new unsigned char[chans]; memcpy(empty_chan, m.empty_chan, chans);*/
+	} // { v=m.v; x=(float*)v.data();}
 	// copy and pad constructor
-	matrix( const matrix &m, int pad_cols, int pad_rows, mojo::pad_type padding= mojo::zero) : cols(m.cols), rows(m.rows), chans(m.chans), chan_aligned(m.chan_aligned), chan_stride(m.chan_stride), _size(m._size), _capacity(m._size)
+	matrix(const matrix &m, int pad_cols, int pad_rows, mojo::pad_type padding= mojo::zero)
+		: _size(m._size),
+		_capacity(m._size),
+		cols(m.cols),
+		rows(m.rows),
+		chans(m.chans),
+		chan_aligned(m.chan_aligned),
+		chan_stride(m.chan_stride)
 	{
 		x = new_x(_size); memcpy(x, m.x, sizeof(float)*_size);
 		*this = pad(pad_cols, pad_rows, padding);
 	}
 
-	~matrix() { if (x) delete_x(); }
+	virtual ~matrix() { if (x) delete_x(); }
 
 	matrix get_chans(int start_channel, int num_chans=1) const
 	{
@@ -413,7 +438,6 @@ public:
 	float mean()
 	{
 		const int s = rows*cols;
-		int cnt = 0;// channel*s;
 		float average = 0;
 		for (int c = 0; c < chans; c++)
 		{
