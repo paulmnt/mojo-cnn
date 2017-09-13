@@ -205,18 +205,26 @@ namespace mojo
 		int _size;
 		int _capacity;
 		float *_x_mem;
-		void delete_x() { delete[] _x_mem; x = NULL;  _x_mem = NULL; }
-		// 4 extra for alignment and 4 for 3 padding for SSE
+		void delete_x()
+		{
+			delete[] _x_mem;
+			x = NULL; 
+			_x_mem = NULL;
+		}
 
-		// avx mem aligment
-		float *new_x(const int size) { _x_mem = new float[size + 8 + 7];  x = (float *)(((uintptr_t)_x_mem + 32) & ~(uintptr_t)0x1F); return x; }
+		float *new_x(const int size)
+		{
+			_x_mem = new float[size + 8 + 7];
+			x = _x_mem;
+			return x;
+		}
 	public:
 		std::string _name;
 		int cols, rows, chans;
 		int chan_aligned;
 		int chan_stride;
 		float *x;
-		// size must be divisible by 8 for AVX
+
 		virtual int calc_chan_stride(int w, int h)
 		{
 			if (chan_aligned)
@@ -276,7 +284,11 @@ namespace mojo
 				*this = pad(pad_cols, pad_rows, padding);
 			}
 
-		virtual ~matrix() { if (x) delete_x(); }
+		virtual ~matrix()
+		{
+			if (x)
+				delete_x();
+		}
 
 		matrix get_chans(int start_channel, int num_chans=1) const
 		{
