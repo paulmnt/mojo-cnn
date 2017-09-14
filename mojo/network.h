@@ -81,7 +81,6 @@ namespace mojo {
 	{
 
 		int _size;
-		static const int MAIN_LAYER_SET = 0;
 
 		// training related stuff
 		float _skip_energy_level;
@@ -115,7 +114,7 @@ namespace mojo {
 		float augment_scale;
 
 
-		std::vector< std::vector<base_layer *>> layer_sets;
+		std::vector<base_layer *> layer_sets;
 
 		std::map<std::string, int> layer_map;  // name-to-index of layer for layer management
 		std::vector<std::pair<std::string, std::string>> layer_graph; // pairs of names of layers that are connected
@@ -132,7 +131,6 @@ namespace mojo {
 			_size=0;
 			_solver = new_solver(opt_name);
 			_cost_function = NULL;
-			layer_sets.resize(1);
 			dW_sets.resize(_batch_size);
 			dbias_sets.resize(_batch_size);
 			batch_open.resize(_batch_size);
@@ -165,11 +163,6 @@ namespace mojo {
 		// call clear if you want to load a different configuration/model
 		void clear()
 		{
-			for(int i=0; i<(int)layer_sets.size(); i++)
-			{
-				__for__(auto l __in__ layer_sets[i]) delete l;
-				layer_sets.clear();
-			}
 			layer_sets.clear();
 			__for__(auto w __in__ W) if(w) delete w;
 			W.clear();
@@ -183,8 +176,11 @@ namespace mojo {
 		// get input size
 		bool get_input_size(int *w, int *h, int *c)
 		{
-			if(layer_sets[MAIN_LAYER_SET].size()<1) return false;
-			*w=layer_sets[MAIN_LAYER_SET][0]->node.cols;*h=layer_sets[MAIN_LAYER_SET][0]->node.rows;*c=layer_sets[MAIN_LAYER_SET][0]->node.chans;
+			if(layer_sets.size() < 1)
+				return false;
+			*w = layer_sets[0]->node.cols;
+			*h = layer_sets[0]->node.rows;
+			*c = layer_sets[0]->node.chans;
 			return true;
 		}
 
@@ -214,20 +210,12 @@ namespace mojo {
 		bool push_back(const char *layer_name, const char *layer_config)
 		{
 			if(layer_map[layer_name]) return false; //already exists
-			base_layer *l=new_layer(layer_name, layer_config);
+			base_layer *l = new_layer(layer_name, layer_config);
 			// set map to index
-
-			// make sure there is a 'set' to add layers to
-			if(layer_sets.size()<1)
-			{
-				std::vector<base_layer *> layer_set;
-				layer_sets.push_back(layer_set);
-			}
-
-			layer_map[layer_name] = (int)layer_sets[MAIN_LAYER_SET].size();
-			layer_sets[MAIN_LAYER_SET].push_back(l);
+			layer_map[layer_name] = (int)layer_sets.size();
+			layer_sets.push_back(l);
 			// upadate as potential last layer - so it sets the out size
-			_size=l->fan_size();
+			_size = l->fan_size();
 			return true;
 		}
 
@@ -241,8 +229,8 @@ namespace mojo {
 			size_t i_top=layer_map[layer_name_top];
 			size_t i_bottom=layer_map[layer_name_bottom];
 
-			base_layer *l_top= layer_sets[MAIN_LAYER_SET][i_top];
-			base_layer *l_bottom= layer_sets[MAIN_LAYER_SET][i_bottom];
+			base_layer *l_top= layer_sets[i_top];
+			base_layer *l_bottom= layer_sets[i_bottom];
 
 			int w_i=(int)W.size();
 			matrix *w = l_bottom->new_connection(*l_top, w_i);
@@ -298,14 +286,14 @@ namespace mojo {
 		// easy way to go, but can't deal with branch/highway/resnet/inception types of architectures
 		void connect_all()
 		{
-			for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size()-1; j++)
-				connect(layer_sets[MAIN_LAYER_SET][j]->name.c_str(), layer_sets[MAIN_LAYER_SET][j+1]->name.c_str());
+			for(int j=0; j < (int) layer_sets.size() - 1; j++)
+				connect(layer_sets[j]->name.c_str(), layer_sets[j+1]->name.c_str());
 		}
 
 		int get_layer_index(const char *name)
 		{
-			for (int j = 0; j < (int)layer_sets[MAIN_LAYER_SET].size(); j++)
-				if (layer_sets[MAIN_LAYER_SET][j]->name.compare(name) == 0)
+			for (int j = 0; j < (int)layer_sets.size(); j++)
+				if (layer_sets[j]->name.compare(name) == 0)
 					return j;
 			return -1;
 		}
@@ -315,7 +303,11 @@ namespace mojo {
 		{
 			std::string str;
 			// print all layer configs
-			for (int j = 0; j<(int)layer_sets[MAIN_LAYER_SET].size(); j++) str+= "  "+ std::to_string((long long)j) +" : " +layer_sets[MAIN_LAYER_SET][j]->name +" : " + layer_sets[MAIN_LAYER_SET][j]->get_config_string();
+			for (int j = 0; j<(int)layer_sets.size(); j++)
+				str += "  " +
+					std::to_string((long long)j) + " : " +
+					layer_sets[j]->name + " : " +
+					layer_sets[j]->get_config_string();
 			str += "\n";
 			// print layer links
 			if (layer_graph.size() <= 0) return str;
@@ -346,7 +338,7 @@ namespace mojo {
 		{
 			// clear nodes to zero & find input layers
 			std::vector<base_layer *> inputs;
-			__for__(auto layer __in__ layer_sets[0])
+			__for__(auto layer __in__ layer_sets)
 			{
 				if (dynamic_cast<input_layer*> (layer) != NULL)  inputs.push_back(layer);
 				layer->node.fill(0.f);
@@ -359,7 +351,7 @@ namespace mojo {
 				memcpy(layer->node.x, in_ptr, sizeof(float)*layer->node.size());
 				in_ptr += layer->node.size();
 			}
-			__for__(auto layer __in__ layer_sets[0])
+			__for__(auto layer __in__ layer_sets)
 			{
 				// add bias and activate these outputs (they should all be summed up from other branches at this point)
 				layer->activate_nodes();
@@ -378,7 +370,7 @@ namespace mojo {
 				}
 
 			}
-			return layer_sets[0][layer_sets[0].size()-1]->node.x;
+			return layer_sets[layer_sets.size() - 1]->node.x;
 		}
 
 		//----------------------------------------------------------------------------------------------------------
@@ -475,48 +467,34 @@ namespace mojo {
 			binary = atoi(s.c_str());
 
 			// binary version to save space if needed
-			if(binary==1)
+			if(binary == 1)
 			{
-				for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size(); j++)
-					if (layer_sets[MAIN_LAYER_SET][j]->use_bias())
-					{
-						ifs.read((char*)layer_sets[MAIN_LAYER_SET][j]->bias.x, layer_sets[MAIN_LAYER_SET][j]->bias.size()*sizeof(float));
-					}
-				for (int j = 0; j < (int)W.size(); j++)
-				{
-
+				for(int j = 0; j < (int) layer_sets.size(); j++)
+					if (layer_sets[j]->use_bias())
+						ifs.read((char*) layer_sets[j]->bias.x, layer_sets[j]->bias.size() * sizeof(float));
+				for (int j = 0; j < (int) W.size(); j++)
 					if (W[j])
-					{
-						ifs.read((char*)W[j]->x, W[j]->size()*sizeof(float));
-					}
-				}
+						ifs.read((char*) W[j]->x, W[j]->size() * sizeof(float));
 			}
-			else if(binary==0)// text version
+			else if(binary == 0) // text version
 			{
 				// read bias
-				for(int j=0; j<layer_count; j++)
-				{
-					if (layer_sets[MAIN_LAYER_SET][j]->use_bias())
+				for(int j = 0; j < layer_count; j++)
+					if (layer_sets[j]->use_bias())
 					{
-						for (int k = 0; k < layer_sets[MAIN_LAYER_SET][j]->bias.size(); k++)
-						{
-							ifs >> layer_sets[MAIN_LAYER_SET][j]->bias.x[k];
-						}
+						for (int k = 0; k < layer_sets[j]->bias.size(); k++)
+							ifs >> layer_sets[j]->bias.x[k];
 						ifs.ignore();
 					}
-				}
 
 				// read weights
-				for (auto j=0; j<(int)W.size(); j++)
-				{
+				for (auto j = 0; j < (int) W.size(); j++)
 					if (W[j])
 					{
 						for (int i = 0; i < W[j]->size(); i++) ifs >> W[j]->x[i];
 						ifs.ignore();
 					}
-				}
 			}
-
 			return true;
 		}
 		bool read(std::string filename)
@@ -578,7 +556,7 @@ namespace mojo {
 
 			std::vector<base_layer *> inputs;
 			int in_size = 0;
-			__for__(auto layer __in__ layer_sets[0])
+			__for__(auto layer __in__ layer_sets)
 			{
 				if (dynamic_cast<input_layer*> (layer) != NULL)
 				{

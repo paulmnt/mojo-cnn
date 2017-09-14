@@ -256,7 +256,7 @@ namespace mojo
 
 		int k=layer_index-1;
 		{
-			base_layer *layer = cnn.layer_sets[0][k];
+			base_layer *layer = cnn.layer_sets[k];
 
 			__for__(auto &link __in__ layer->forward_linked_layers)
 			{
@@ -305,11 +305,11 @@ namespace mojo
 	mojo::matrix draw_cnn_state(mojo::network &cnn, int layer_index, mojo::mojo_palette color_palette = mojo::gray)
 	{
 		cv::Mat im;
-		int layers = (int)cnn.layer_sets[0].size();
+		int layers = (int)cnn.layer_sets.size();
 		if (layer_index < 0 || layer_index >= layers) return mojo::matrix();
 
 		std::vector <cv::Mat> im_layers;
-		base_layer *layer = cnn.layer_sets[0][layer_index];
+		base_layer *layer = cnn.layer_sets[layer_index];
 
 		for (int i = 0; i < layer->node.chans; i++)
 		{
