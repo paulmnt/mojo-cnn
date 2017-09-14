@@ -37,12 +37,6 @@
 #include <vector>
 
 #include "layer.h"
-#include "activation.h"
-
-#ifndef __for__
-#define __for__ for
-#define __in__ :
-#endif
 
 namespace mojo {
 
@@ -83,7 +77,7 @@ namespace mojo {
 		std::vector<base_layer *> layer_sets;
 
 		std::map<std::string, int> layer_map;  // name-to-index of layer for layer management
-		std::vector<std::pair<std::string, std::string>> layer_graph; // pairs of names of layers that are connected
+		std::vector<std::pair<std::string, std::string> > layer_graph; // pairs of names of layers that are connected
 		std::vector<matrix *> W; // these are the weights between/connecting layers
 
 	network(const char* opt_name=NULL)
@@ -100,7 +94,9 @@ namespace mojo {
 		void clear()
 		{
 			layer_sets.clear();
-			__for__(auto w __in__ W) if(w) delete w;
+			for (int i = 0; i < (int) W.size(); i++)
+				if(W[i])
+					delete W[i];
 			W.clear();
 			layer_map.clear();
 			layer_graph.clear();
@@ -153,43 +149,6 @@ namespace mojo {
 			matrix *w = l_bottom->new_connection(*l_top, w_i);
 			W.push_back(w);
 			layer_graph.push_back(std::make_pair(layer_name_top,layer_name_bottom));
-
-			int fan_in=l_bottom->fan_size();
-			int fan_out=l_top->fan_size();
-
-			// ToDo: this may be broke when 2 layers connect to one. need to fix (i.e. resnet)
-			// after all connections, run through and do weights with correct fan count
-
-			// initialize weights - ToDo: separate and allow users to configure(?)
-			if (w && l_bottom->has_weights())
-			{
-				if (strcmp(l_bottom->p_act->name, "tanh") == 0)
-				{
-					// xavier : for tanh
-					float weight_base = (float)(std::sqrt(6. / ((double)fan_in + (double)fan_out)));
-					w->fill_random_uniform(weight_base);
-				}
-				else if ((strcmp(l_bottom->p_act->name, "sigmoid") == 0) || (strcmp(l_bottom->p_act->name, "sigmoid") == 0))
-				{
-					// xavier : for sigmoid
-					float weight_base = 4.f*(float)(std::sqrt(6. / ((double)fan_in + (double)fan_out)));
-					w->fill_random_uniform(weight_base);
-				}
-				else if ((strcmp(l_bottom->p_act->name, "lrelu") == 0) || (strcmp(l_bottom->p_act->name, "relu") == 0)
-					|| (strcmp(l_bottom->p_act->name, "vlrelu") == 0) || (strcmp(l_bottom->p_act->name, "elu") == 0))
-				{
-					// he : for relu
-					float weight_base = (float)(std::sqrt(2. / (double)fan_in));
-					w->fill_random_normal(weight_base);
-				}
-				else
-				{
-					// lecun : orig
-					float weight_base = (float)(std::sqrt(1. / (double)fan_in));
-					w->fill_random_uniform(weight_base);
-				}
-			}
-			else if (w) w->fill(0);
 		}
 
 		// automatically connect all layers in the order they were provided
@@ -215,7 +174,7 @@ namespace mojo {
 			// print all layer configs
 			for (int j = 0; j<(int)layer_sets.size(); j++)
 				str += "  " +
-					std::to_string((long long)j) + " : " +
+					to_string((long long)j) + " : " +
 					layer_sets[j]->name + " : " +
 					layer_sets[j]->get_config_string();
 			str += "\n";
@@ -248,27 +207,32 @@ namespace mojo {
 		{
 			// clear nodes to zero & find input layers
 			std::vector<base_layer *> inputs;
-			__for__(auto layer __in__ layer_sets)
+			for (int i = 0; i < (int) layer_sets.size(); i++)
 			{
+				base_layer *layer = layer_sets[i];
 				if (dynamic_cast<input_layer*> (layer) != NULL)  inputs.push_back(layer);
 				layer->node.fill(0.f);
 			}
 			// first layer assumed input. copy input to it
 			const float *in_ptr = in;
 
-			__for__(auto layer __in__ inputs)
+			for (int i = 0; i < (int) inputs.size(); i++)
 			{
+				base_layer *layer = inputs[i];
 				memcpy(layer->node.x, in_ptr, sizeof(float)*layer->node.size());
 				in_ptr += layer->node.size();
 			}
-			__for__(auto layer __in__ layer_sets)
+
+			for (int i = 0; i < (int) layer_sets.size(); i++)
 			{
+				base_layer *layer = layer_sets[i];
 				// add bias and activate these outputs (they should all be summed up from other branches at this point)
 				layer->activate_nodes();
 
 				// send output signal downstream (note in this code 'top' is input layer, 'bottom' is output - bucking tradition
-				__for__ (auto &link __in__ layer->forward_linked_layers)
+				for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
 				{
+					std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
 					// instead of having a list of paired connections, just use the shape of W to determine connections
 					// this is harder to read, but requires less look-ups
 					// the 'link' variable is a std::pair created during the connect() call for the layers
@@ -345,7 +309,7 @@ namespace mojo {
 			// read layer def
 			std::string layer_name;
 			std::string layer_def;
-			for (auto i=0; i<layer_count; i++)
+			for (int i = 0; i < layer_count; i++)
 			{
 				layer_name = getcleanline(ifs);
 				layer_def = getcleanline(ifs);
@@ -364,7 +328,7 @@ namespace mojo {
 			{
 				std::string layer_name1;
 				std::string layer_name2;
-				for (auto i=0; i<graph_count; i++)
+				for (int i = 0; i < graph_count; i++)
 				{
 					layer_name1= getcleanline(ifs);
 					layer_name2 = getcleanline(ifs);
@@ -398,7 +362,7 @@ namespace mojo {
 					}
 
 				// read weights
-				for (auto j = 0; j < (int) W.size(); j++)
+				for (int j = 0; j < (int) W.size(); j++)
 					if (W[j])
 					{
 						for (int i = 0; i < W[j]->size(); i++) ifs >> W[j]->x[i];

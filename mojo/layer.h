@@ -39,9 +39,16 @@
 namespace mojo
 {
 
+	template <typename T>
+		std::string to_string(T val)
+	{
+		std::stringstream stream;
+		stream << val;
+		return stream.str();
+	}
 
-#define int2str(a) std::to_string((long long)a)
-#define float2str(a) std::to_string((long double)a)
+#define int2str(a) to_string((long long)a)
+#define float2str(a) to_string((long double)a)
 #define bail(txt) {std::cerr << txt; throw;}
 
 //----------------------------------------------------------------------------------------------------------
@@ -66,9 +73,9 @@ namespace mojo
 
 		std::string name;
 		// index of W matrix, index of connected layer
-		std::vector<std::pair<int,base_layer*>> forward_linked_layers;
+		std::vector<std::pair<int,base_layer*> > forward_linked_layers;
 		matrix delta;
-		std::vector<std::pair<int,base_layer*>> backward_linked_layers;
+		std::vector<std::pair<int,base_layer*> > backward_linked_layers;
 
 		virtual void update_bias(const matrix &newbias, float alpha) {};
 

@@ -258,12 +258,13 @@ namespace mojo
 		{
 			base_layer *layer = cnn.layer_sets[k];
 
-			__for__(auto &link __in__ layer->forward_linked_layers)
+			for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
 			{
+				std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
 				int connection_index = link.first;
 				base_layer *p_bottom = link.second;
 				if (!p_bottom->has_weights()) continue;
-				for (auto i = 0; i < cnn.W[connection_index]->chans; i++)
+				for (int i = 0; i < cnn.W[connection_index]->chans; i++)
 				{
 					cv::Mat im = matrix2cv(cnn.W[connection_index]->get_chans(i), true);
 					cv::resize(im, im, cv::Size(0, 0), 2., 2., 0);

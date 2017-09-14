@@ -34,7 +34,6 @@
 #include <string.h>
 #include <string>
 #include <cstdlib>
-#include <random>
 #include <algorithm>
 
 
@@ -480,21 +479,11 @@ namespace mojo
 			for(int i=0; i<s; i++) x[i]-=m;
 			return m;
 		}
-		void fill(float val) { for(int i=0; i<_size; i++) x[i]=val;
-		}
-		void fill_random_uniform(float range)
+		void fill(float val)
 		{
-			std::mt19937 gen(0);
-			std::uniform_real_distribution<float> dst(-range, range);
-			for (int i = 0; i<_size; i++) x[i] = dst(gen);
+			for(int i = 0; i < _size; i++)
+				x[i] = val;
 		}
-		void fill_random_normal(float std)
-		{
-			std::mt19937 gen(0);
-			std::normal_distribution<float> dst(0, std);
-			for (int i = 0; i<_size; i++) x[i] = dst(gen);
-		}
-
 
 		// deep copy
 		inline matrix& operator =(const matrix &m)

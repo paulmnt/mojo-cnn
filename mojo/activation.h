@@ -29,7 +29,7 @@
 #ifndef _ACTIVATION_H_
 #define _ACTIVATION_H_
 
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <string>
 
@@ -64,9 +64,9 @@ namespace mojo {
 			for (int j = 1; j<size; j++) if (in[j] > max) max = in[j];
 
 			float denom = 0;
-			for (int j = 0; j<size; j++) denom += std::exp(in[j] - max);
+			for (int j = 0; j<size; j++) denom += exp(in[j] - max);
 
-			for(int i=0; i<size; i++) in[i]= std::exp(in[i] - max) / denom;
+			for(int i=0; i<size; i++) in[i]= exp(in[i] - max) / denom;
 		}
 		inline void fc(float *in, const int size, const float bias)
 		{
@@ -74,9 +74,9 @@ namespace mojo {
 			for (int j = 1; j<size; j++) if (in[j] > max) max = in[j];
 
 			float denom = 0;
-			for (int j = 0; j<size; j++) denom += std::exp(in[j] - max);
+			for (int j = 0; j<size; j++) denom += exp(in[j] - max);
 
-			for(int i=0; i<size; i++) in[i]= std::exp(in[i] - max) / denom;
+			for(int i=0; i<size; i++) in[i]= exp(in[i] - max) / denom;
 		}
 		inline float df(float *in, int i, const int size)
 		{
