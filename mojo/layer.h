@@ -53,14 +53,12 @@ namespace mojo
 	protected:
 		bool _has_weights;
 		bool _use_bias;
-		float _learning_factor;
 
 	public:
 		activation_function *p_act;
 
 		bool has_weights() {return _has_weights;}
 		bool use_bias() { return _use_bias; }
-		void set_learning_factor(float f=1.0f) {_learning_factor = 1.f;}
 
 		int pad_cols, pad_rows;
 		matrix node;
@@ -72,16 +70,13 @@ namespace mojo
 		matrix delta;
 		std::vector<std::pair<int,base_layer*>> backward_linked_layers;
 
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1) =0;
-		virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train =1)=0;
 		virtual void update_bias(const matrix &newbias, float alpha) {};
 
-		virtual void accumulate_signal(const base_layer &top_node, const matrix &w, const int train =0) =0;
+		virtual void accumulate_signal(const base_layer &top_node, const matrix &w) =0;
 
 	base_layer(const char* layer_name, int _w, int _h=1, int _c=1)
 		: _has_weights(true),
 			_use_bias(false),
-			_learning_factor(1.f),
 			p_act(NULL),
 			pad_cols(0),
 			pad_rows(0),
@@ -140,9 +135,7 @@ namespace mojo
 	input_layer(const char *layer_name, int _w, int _h=1, int _c=1) : base_layer(layer_name,_w,_h,_c) {p_act=new_activation_function("identity"); }
 		virtual  ~input_layer(){}
 		virtual void activate_nodes() { }
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train =1) {}
-		virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train =1) {}
-		virtual void accumulate_signal(const base_layer &top_node, const matrix &w, const int train =0) {}
+		virtual void accumulate_signal(const base_layer &top_node, const matrix &w) {}
 		virtual std::string get_config_string() {std::string str="input "+int2str(node.cols)+" "+int2str(node.rows)+" "+int2str(node.chans)+ " "+p_act->name+"\n"; return str;}
 	};
 
@@ -161,7 +154,7 @@ namespace mojo
 
 		}
 		virtual std::string get_config_string() {std::string str="fully_connected "+int2str(node.size())+ " "+p_act->name+"\n"; return str;}
-		virtual void accumulate_signal( const base_layer &top,const matrix &w, const int train =0)
+		virtual void accumulate_signal( const base_layer &top,const matrix &w)
 		{
 			// doesn't care if shape is not 1D
 			// here weights are formated in matrix, top node in cols, bottom node along rows. (note that my top is opposite of traditional understanding)
@@ -197,58 +190,6 @@ namespace mojo
 		virtual void update_bias(const matrix &newbias, float alpha) {
 			for (int j = 0; j < bias.size(); j++) bias.x[j] -= newbias.x[j] * alpha;
 		}
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train =1)
-		{
-			if(top.delta.cols*top.delta.rows==top.delta.chan_stride)
-			{
-				const int w_cols = w.cols;
-				for (int b = 0; b < delta.size(); b++)
-				{
-					const float cb = delta.x[b];
-					for (int t = 0; t < top.delta.size(); t++)
-						top.delta.x[t] += cb*w.x[t + b*w_cols];
-				}
-			}
-			else
-			{
-				const int w_cols = w.cols;
-				const int chan_size=top.delta.cols*top.delta.rows;
-
-				for (int b = 0; b < delta.size(); b++)
-				{
-					const float cb = delta.x[b];
-					for (int tc = 0; tc < top.delta.chans; tc++)
-						for (int t = 0; t < chan_size; t++)
-							top.delta.x[t+tc*top.delta.chan_stride] += cb*w.x[t + tc*chan_size + b*w_cols];
-				}
-
-
-
-			}
-
-
-		}
-
-		virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train = 1)
-		{
-			const float *bottom = delta.x; const int sizeb = delta.size();
-			const float *top = top_layer.node.x; const int sizet = top_layer.node.cols*top_layer.node.rows*top_layer.node.chans;
-			dw.resize(sizet, sizeb, 1);
-
-			for (int b = 0; b < sizeb; b++)
-			{
-				const float cb = bottom[b];
-				const int chan_size =  top_layer.node.cols*top_layer.node.rows;
-				if(sizet!=top_layer.node.size())
-					for (int tc = 0; tc < top_layer.node.chans; tc++)
-						for (int t = 0; t < chan_size; t++)
-							dw.x[t+tc*chan_size + b*sizet] = top[t+tc*top_layer.node.chan_stride] * cb;
-
-				else
-					for (int t = 0; t < sizet; t++)	dw.x[t + b*sizet] = top[t] * cb;
-			}
-		}
-
 	};
 
 //----------------------------------------------------------------------------------------------------------
@@ -284,8 +225,6 @@ namespace mojo
 			_max_map.resize(_w*_h*_c);
 			base_layer::resize(_w, _h, _c);
 		}
-		// no weights
-		virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train =1) {}
 		virtual matrix * new_connection(base_layer &top, int weight_mat_index)
 		{
 			// need to set the size of this layer
@@ -306,7 +245,7 @@ namespace mojo
 
 		// this is downsampling
 		// the pool size must fit correctly in the image map (use resize prior to call if this isn't the case)
-		virtual void accumulate_signal(const base_layer &top,const matrix &w,const int train =0)
+		virtual void accumulate_signal(const base_layer &top,const matrix &w)
 		{
 			int kstep = top.node.chan_stride;
 			int jstep=top.node.cols;
@@ -394,14 +333,6 @@ namespace mojo
 				}
 			}
 		}
-
-		// this is upsampling
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train =1)
-		{
-			int *p_map = _max_map.data();
-			const int s = (int)_max_map.size();
-			for(int k=0; k<s; k++) top.delta.x[p_map[k]]+=delta.x[k];
-		}
 	};
 
 
@@ -467,7 +398,7 @@ namespace mojo
 		}
 
 
-		virtual void accumulate_signal( const base_layer &top, const matrix &w, const int train =0)
+		virtual void accumulate_signal( const base_layer &top, const matrix &w)
 		{
 			const int kstep = top.node.chan_stride;// NOT the same as top.node.cols*top.node.rows;
 			const int jstep=top.node.cols;
@@ -541,250 +472,6 @@ namespace mojo
 			}
 
 		}
-
-
-		// convolution::distribute_delta
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train=1)
-		{
-
-			// here to calculate top_delta += bottom_delta * W
-			matrix delta_pad(delta, pad_cols, pad_rows);
-
-			//const int kstep=top.delta.cols*top.delta.rows;
-			const int kstep=top.delta.chan_stride;
-
-			const int jstep=top.delta.cols;
-			const int kernel_size=kernel_cols*kernel_rows;
-			const int map_stride=delta_pad.chan_stride;
-
-			const float *_w = w.x;
-			const int delta_size = delta_pad.cols;
-			const int map_cnt=maps;
-			const int top_delta_size = top.delta.rows;
-			const int top_delta_chans = top.delta.chans;
-			const int stride = _stride;
-
-			matrix delt(top.delta.cols, top.delta.rows, top.delta.chans,NULL,true);
-
-			if (kernel_cols == 5)
-			{
-				matrix img_ptr(delta_size, delta_size, 25, NULL, true);
-				matrix filter_ptr(28, 1);
-
-				for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
-				{
-					unwrap_aligned_NxN(5, img_ptr.x, &delta_pad.x[map*map_stride], delta_size, stride);
-					const int outsize = top_delta_size*top_delta_size;
-					for (int k = 0; k < top_delta_chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_w = &w.x[(k*maps + map)*kernel_size];
-						for (int ii = 0; ii < 25; ii++) filter_ptr.x[ii] = _w[24 - ii];
-						float *out = &delt.x[k*delt.chan_stride];
-						memcpy(out,&top.delta.x[k*kstep],sizeof(float)*outsize);
-						dotsum_unwrapped_5x5(img_ptr.x, filter_ptr.x, out, outsize);
-						memcpy(&top.delta.x[k*kstep],out,sizeof(float)*outsize);
-					}
-				}
-			}
-			else if(kernel_cols==3)
-			{
-				matrix img_ptr(delta_size, delta_size, 9, NULL, true);
-				matrix filter_ptr(9, 1);
-
-				for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
-				{
-					unwrap_aligned_NxN(3, img_ptr.x, &delta_pad.x[map*map_stride], delta_size, stride);
-					const int outsize = top_delta_size*top_delta_size;
-					for (int k = 0; k < top_delta_chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_w = &w.x[(k*maps + map)*kernel_size];
-						for (int ii = 0; ii < 9; ii++) filter_ptr.x[ii] = _w[8 - ii];
-						float *out = &delt.x[k*delt.chan_stride];
-						memcpy(out,&top.delta.x[k*kstep],sizeof(float)*outsize);
-						dotsum_unwrapped_3x3(img_ptr.x, filter_ptr.x, out, outsize);
-						memcpy(&top.delta.x[k*kstep],out,sizeof(float)*outsize);
-					}
-				}
-			}
-			else if (kernel_cols == 2)
-			{
-				matrix img_ptr(delta_size, delta_size, 4, NULL, true);
-				matrix filter_ptr(4, 1);
-				matrix out_aligned(top_delta_size,top_delta_size,1,NULL,true);
-				for (int map = 0; map < map_cnt; map+=1) // how many maps  maps= node.chans
-				{
-					unwrap_aligned_NxN(2, img_ptr.x, &delta_pad.x[map*map_stride], delta_size, stride);
-					const int outsize = top_delta_size*top_delta_size;
-					for (int k = 0; k < top_delta_chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_w = &w.x[(k*maps + map)*kernel_size];
-						// flip-flip to make 180 version
-						for (int ii = 0; ii < 4; ii++) filter_ptr.x[ii] = _w[3 - ii];
-						memcpy(out_aligned.x, &top.delta.x[k*kstep],outsize*sizeof(float));
-						float *out = out_aligned.x;
-						dotsum_unwrapped_2x2(img_ptr.x, filter_ptr.x, out, outsize);
-						memcpy(&top.delta.x[k*kstep],out_aligned.x,outsize*sizeof(float));
-
-					}
-				}
-			}
-			else if (kernel_cols == 1)
-			{
-				for (int j = 0; j<top.delta.rows; j += stride) // input h
-				{
-					for (int i = 0; i<top.delta.cols; i += stride) // intput w
-					{
-						for (int k = 0; k<top.delta.chans; k++) // input channels --- same as kernels_per_map - kern for each input
-						{
-							int td_i = i + (j)*jstep + k*kstep;
-							float *delt = &delta_pad.x[i + (j)*delta_pad.cols + 0*map_stride];
-							float *wx = &w.x[(0 + k*maps)*kernel_size];
-							for (int map = 0; map<maps; map++) // how many maps  maps= node.chans
-							{
-								top.delta.x[td_i] += (*delt)  * (*wx);
-								delt += map_stride;
-								wx += kernel_size;
-
-							} // all input chans
-						}
-					}
-				} //y
-			}
-			else
-			{
-
-				for(int j=0; j<top.delta.rows; j+=stride) // input h
-				{
-					for(int i=0; i<top.delta.cols; i+=stride) // intput w
-					{
-						for(int k=0; k<top.delta.chans; k++) // input channels --- same as kernels_per_map - kern for each input
-						{
-							int td_i = i+(j)*jstep + k*kstep;
-							for(int map=0; map<maps; map++) // how many maps  maps= node.chans
-							{
-								top.delta.x[td_i] += unwrap_2d_dot_rot180(
-									&delta_pad.x[i+(j)*delta_pad.cols + map*map_stride],
-									&w.x[(map+k*maps)*kernel_size],
-									kernel_cols,
-									delta_pad.cols,kernel_cols);
-
-							} // all input chans
-						}
-					}
-				} //y
-
-			} // all maps=chans
-
-		}
-
-		// convolution::calculate_dw
-		virtual void calculate_dw(const base_layer &top, matrix &dw, const int train =1)
-		{
-			int kstep=top.delta.chan_stride;
-			int jstep=top.delta.cols;
-			int kernel_size=kernel_cols*kernel_rows;
-			int map_stride=delta.chan_stride;
-
-			dw.resize(kernel_cols, kernel_rows,kernels_per_map*maps);
-			dw.fill(0);
-
-			// node x already init to 0
-			const int top_node_size= top.node.cols;
-			const int node_size = node.rows;
-			const int delta_size = delta.cols;
-			const int kern_len=kernel_cols;
-			const float *_top;
-			if(kern_len==5)
-			{
-				for(int map=0; map<maps; map++) // how many maps  maps= node.chans
-				{
-					const float *_delta =&delta.x[map*map_stride];
-					for(int k=0; k<top.node.chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_top = &top.node.x[k*kstep];
-						const int w_i = (map+k*maps)*kernel_size;
-						const float *_t=_top;
-						float *_w=dw.x+w_i;
-						_w[0]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[1]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[2]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
-						_t=_top+jstep;
-						_w=dw.x+w_i+kern_len;
-						_w[0]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[1]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[2]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
-						_t=_top+jstep*2;
-						_w=dw.x+w_i+kern_len*2;
-						_w[0]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[1]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[2]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
-						_t=_top+jstep*3;
-						_w=dw.x+w_i+kern_len*3;
-						_w[0]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[1]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[2]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
-						_t=_top+jstep*4;
-						_w=dw.x+w_i+kern_len*4;
-						_w[0]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[1]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[2]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[3]+= unwrap_2d_dot( _t++, _delta,	node_size,top_node_size, delta_size);
-						_w[4]+= unwrap_2d_dot( _t, _delta,	node_size,top_node_size, delta_size);
-					} //y
-				} // all maps=chans
-			}
-			else if(kern_len==3)
-			{
-				for(int map=0; map<maps; map++) // how many maps  maps= node.chans
-				{
-					const float *_delta =&delta.x[map*map_stride];
-					for(int k=0; k<top.node.chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_top = &top.node.x[k*kstep];
-						const int w_i = (map+k*maps)*kernel_size;
-						dw.x[w_i+0+(0)*kern_len]+= unwrap_2d_dot( _top + 0+(0)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+1+(0)*kern_len]+= unwrap_2d_dot( _top + 1+(0)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+2+(0)*kern_len]+= unwrap_2d_dot( _top + 2+(0)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+0+(1)*kern_len]+= unwrap_2d_dot( _top + 0+(1)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+1+(1)*kern_len]+= unwrap_2d_dot( _top + 1+(1)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+2+(1)*kern_len]+= unwrap_2d_dot( _top + 2+(1)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+0+(2)*kern_len]+= unwrap_2d_dot( _top + 0+(2)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+1+(2)*kern_len]+= unwrap_2d_dot( _top + 1+(2)*jstep, _delta,	node_size,top_node_size, delta_size);
-						dw.x[w_i+2+(2)*kern_len]+= unwrap_2d_dot( _top + 2+(2)*jstep, _delta,	node_size,top_node_size, delta_size);
-					} //y
-				} // all maps=chans
-			}
-			else
-			{
-
-				for(int map=0; map<maps; map++) // how many maps  maps= node.chans
-				{
-					const float *_delta =&delta.x[map*map_stride];
-					for(int k=0; k<top.node.chans; k++) // input channels --- same as kernels_per_map - kern for each input
-					{
-						_top = &top.node.x[k*kstep];
-						const int w_i = (map+k*maps)*kernel_size;
-						for(int jj=0; jj<kern_len; jj+=1)
-						{
-							for(int ii=0; ii<kern_len; ii+=1)
-							{
-								dw.x[w_i+ii+(jj)*kern_len]+= unwrap_2d_dot( _top + ii+(jj)*jstep, _delta,
-													node_size,top_node_size, delta_size);
-
-							} // all input chans
-						} // x
-					} //y
-				} // all maps=chans
-			}
-		}
 	};
 
 
@@ -825,10 +512,8 @@ namespace mojo
 			return base_layer::new_connection(top, weight_mat_index);
 		}
 
-		// no weights
-		virtual void calculate_dw(const base_layer &top_layer, matrix &dw, const int train = 1) {}
 
-		virtual void accumulate_signal(const base_layer &top, const matrix &w, const int train = 0)
+		virtual void accumulate_signal(const base_layer &top, const matrix &w)
 		{
 
 			int opadx = node.cols - top.node.cols;
@@ -866,34 +551,6 @@ namespace mojo
 			}
 		}
 
-		virtual void distribute_delta(base_layer &top, const matrix &w, const int train = 1)
-		{
-			int map_offset = layer_to_channel[&top];
-			int padx = node.cols - top.node.cols;
-			int pady = node.rows - top.node.rows;
-			if (padx > 0) padx /= 2;
-			if (pady > 0) pady /= 2;
-
-			if (padx > 0 || pady > 0)
-			{
-				matrix m = delta.get_chans(map_offset, top.delta.chans);
-				top.delta += m.crop(padx, pady, top.delta.cols, top.delta.rows);
-			}
-			else if ((node.cols == top.node.cols) && (node.rows == top.node.rows))
-			{
-				top.delta += delta.get_chans(map_offset, top.delta.chans);
-			}
-			else
-			{
-				matrix m = delta.get_chans(map_offset, top.delta.chans);
-				// pad
-				int dx = abs(padx) / 2;
-				int dy = abs(pady) / 2;
-				top.delta += m.pad(dx, dy);
-
-			}
-
-		}
 	};
 
 //--------------------------------------------------

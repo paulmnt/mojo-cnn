@@ -48,24 +48,6 @@
 
 namespace mojo {
 
-
-
-#ifdef MOJO_PROFILE_LAYERS
-	void StartCounter(){}
-	double GetCounter(){return 0;}
-#endif
-
-	void replace_str(std::string& str, const std::string& from, const std::string& to) {
-		if (from.empty())
-			return;
-		size_t start_pos = 0;
-		while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-			str.replace(start_pos, from.length(), to);
-			start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-		}
-	}
-
-
 // returns Energy (euclidian distance / 2) and max index
 	float match_labels(const float *out, const float *target, const int size, int *best_index = NULL)
 	{
@@ -104,7 +86,6 @@ namespace mojo {
 		// training related stuff
 		float _skip_energy_level;
 		int _batch_size;
-		bool _smart_train;
 		std::vector <float> _running_E;
 		double _running_sum_E;
 		cost_function *_cost_function;
@@ -207,26 +188,6 @@ namespace mojo {
 			return true;
 		}
 
-		void build_layer_sets()
-		{
-			sync_layer_sets();
-		}
-
-		void enable_external_threads(int threads = -1)
-		{
-			build_layer_sets();
-		}
-
-		// when using threads, need to get bias data synched between all layer sets,
-		// call this after bias update in main layer set to copy the bias to the other sets
-		void sync_layer_sets()
-		{
-			for(int i=1; i<(int)layer_sets.size();i++)
-				for(int j=0; j<(int)layer_sets[MAIN_LAYER_SET].size(); j++)
-					for(int k=0; k<layer_sets[MAIN_LAYER_SET][j]->bias.size(); k++)
-						(layer_sets[i])[j]->bias.x[k]=(layer_sets[MAIN_LAYER_SET])[j]->bias.x[k];
-		}
-
 		// used to add some noise to weights
 		void heat_weights()
 		{
@@ -262,15 +223,11 @@ namespace mojo {
 				std::vector<base_layer *> layer_set;
 				layer_sets.push_back(layer_set);
 			}
-			// make sure layer_sets are created
-			build_layer_sets();
 
 			layer_map[layer_name] = (int)layer_sets[MAIN_LAYER_SET].size();
 			layer_sets[MAIN_LAYER_SET].push_back(l);
 			// upadate as potential last layer - so it sets the out size
 			_size=l->fan_size();
-			// add other copies needed for threading
-			for(int i=1; i<(int)layer_sets.size();i++) layer_sets[i].push_back(new_layer(layer_name, layer_config));
 			return true;
 		}
 
@@ -291,13 +248,6 @@ namespace mojo {
 			matrix *w = l_bottom->new_connection(*l_top, w_i);
 			W.push_back(w);
 			layer_graph.push_back(std::make_pair(layer_name_top,layer_name_bottom));
-			// need to build connections for other batches/threads
-			for(int i=1; i<(int)layer_sets.size(); i++)
-			{
-				l_top= layer_sets[i][i_top];
-				l_bottom= layer_sets[i][i_bottom];
-				delete l_bottom->new_connection(*l_top, w_i);
-			}
 
 			// we need to let solver prepare space for stateful information
 			if (_solver)
@@ -382,7 +332,6 @@ namespace mojo {
 
 		// performs forward pass and returns class index
 		// do not delete or modify the returned pointer. it is a live pointer to the last layer in the network
-		// if calling over multiple threads, provide the thread index since the interal data is not otherwise thread safe
 		int predict_class(const float *in)
 		{
 			const float* out = forward(in);
@@ -393,11 +342,8 @@ namespace mojo {
 		// F O R W A R D
 		//
 		// the main forward pass
-		// if calling over multiple threads, provide the thread index since the interal data is not otherwise thread safe
-		// train parameter is used to designate the forward pass is used in training (it turns on dropout layers, etc..)
-		float* forward(const float *in, int _train=0)
+		float* forward(const float *in)
 		{
-			//std::cout << get_thread_num() << ",";
 			// clear nodes to zero & find input layers
 			std::vector<base_layer *> inputs;
 			__for__(auto layer __in__ layer_sets[0])
@@ -427,14 +373,7 @@ namespace mojo {
 					int connection_index = link.first;
 					base_layer *p_bottom = link.second;
 					// weight distribution of the signal to layers under it
-#ifdef MOJO_PROFILE_LAYERS
-					StartCounter();
-#endif
-					p_bottom->accumulate_signal(*layer, *W[connection_index], _train);
-
-#ifdef MOJO_PROFILE_LAYERS
-					std::cout << p_bottom->name << "\t" << GetCounter() << "ms\n";
-#endif
+					p_bottom->accumulate_signal(*layer, *W[connection_index]);
 
 				}
 
@@ -442,6 +381,9 @@ namespace mojo {
 			return layer_sets[0][layer_sets[0].size()-1]->node.x;
 		}
 
+		//----------------------------------------------------------------------------------------------------------
+		// R E A D
+		//
 		std::string getcleanline(std::istream& ifs)
 		{
 			std::string s;
@@ -449,9 +391,6 @@ namespace mojo {
 			// The characters in the stream are read one-by-one using a std::streambuf.
 			// That is faster than reading them one-by-one using the std::istream.
 			// Code that uses streambuf this way must be guarded by a sentry object.
-			// The sentry object performs various tasks,
-			// such as thread synchronization and updating the stream state.
-
 			std::istream::sentry se(ifs, true);
 			std::streambuf* sb = ifs.rdbuf();
 
@@ -473,9 +412,6 @@ namespace mojo {
 			}
 		}
 
-		//----------------------------------------------------------------------------------------------------------
-		// R E A D
-		//
 		bool read(std::istream &ifs)
 		{
 			if(!ifs.good()) return false;
@@ -500,8 +436,6 @@ namespace mojo {
 				}
 				connect_all();
 
-				// copies batch=0 stuff to other batches
-				sync_layer_sets();
 				return true;
 			}
 			else
@@ -582,9 +516,6 @@ namespace mojo {
 					}
 				}
 			}
-
-			// copies batch=0 stuff to other batches
-			sync_layer_sets();
 
 			return true;
 		}

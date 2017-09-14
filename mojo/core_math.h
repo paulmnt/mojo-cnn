@@ -208,7 +208,7 @@ namespace mojo
 		void delete_x()
 		{
 			delete[] _x_mem;
-			x = NULL; 
+			x = NULL;
 			_x_mem = NULL;
 		}
 
@@ -303,6 +303,7 @@ namespace mojo
 		{
 			return pad(dx, dy, dx, dy, edge_pad);
 		}
+
 		matrix pad(int dx, int dy, int dx_right, int dy_bottom, mojo::pad_type edge_pad = mojo::zero) const
 		{
 			matrix v(cols+dx+dx_right,rows+dy+dy_bottom,chans);
@@ -384,7 +385,7 @@ namespace mojo
 			return v;
 		}
 
-		mojo::matrix shift(int dx, int dy, mojo::pad_type edge_pad=mojo::zero)
+		matrix shift(int dx, int dy, mojo::pad_type edge_pad=mojo::zero)
 		{
 			int orig_cols=cols;
 			int orig_rows=rows;
@@ -396,7 +397,7 @@ namespace mojo
 			return shifted.crop(off_x-dx, off_y-dy,orig_cols,orig_rows);
 		}
 
-		mojo::matrix flip_cols()
+		matrix flip_cols()
 		{
 			mojo::matrix v(cols,rows,chans);
 			for(int k=0; k<chans; k++)
@@ -406,7 +407,7 @@ namespace mojo
 
 			return v;
 		}
-		mojo::matrix flip_rows()
+		matrix flip_rows()
 		{
 			mojo::matrix v(cols, rows, chans);
 
