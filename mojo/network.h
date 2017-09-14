@@ -223,27 +223,455 @@ namespace mojo {
 				in_ptr += layer->node.size();
 			}
 
-			for (int i = 0; i < (int) layer_sets.size(); i++)
+
+			// Run Inference (note that the following is a manually unrolled loop)
 			{
-				base_layer *layer = layer_sets[i];
-				// add bias and activate these outputs (they should all be summed up from other branches at this point)
-				layer->activate_nodes();
-
-				// send output signal downstream (note in this code 'top' is input layer, 'bottom' is output - bucking tradition
-				for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+				// Input layer
 				{
-					std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
-					// instead of having a list of paired connections, just use the shape of W to determine connections
-					// this is harder to read, but requires less look-ups
-					// the 'link' variable is a std::pair created during the connect() call for the layers
-					int connection_index = link.first;
-					base_layer *p_bottom = link.second;
-					// weight distribution of the signal to layers under it
-					p_bottom->accumulate_signal(*layer, *W[connection_index]);
-
+					// input 224 224 3
+					input_layer *layer = (input_layer *) layer_sets[0];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
 				}
-
+				{
+					// resize 226
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[1];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 64 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[2];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 226
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[3];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 64 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[4];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// max_pool 2 2
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[5];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 114
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[6];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 128 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[7];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 114
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[8];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 128 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[9];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// max_pool 2 2
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[10];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 58
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[11];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 256 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[12];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 58
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[13];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 256 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[14];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 58
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[15];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 256 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[16];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// max_pool 2 2
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[17];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 30
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[18];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[19];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 30
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[20];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[21];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 30
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[22];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[23];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// max_pool 2 2
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[24];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 16
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[25];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[26];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 16
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[27];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[28];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// resize 16
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[29];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// convolution 3 512 1 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[30];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// max_pool 2 2
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[31];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// fully_connected 4096 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[32];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// fully_connected 4096 relu
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[33];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
+				{
+					// fully_connected 1000 softmax
+					concatenation_layer *layer = (concatenation_layer *) layer_sets[34];
+					layer->activate_nodes();
+					for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+					{
+						std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+						int connection_index = link.first;
+						base_layer *p_bottom = link.second;
+						p_bottom->accumulate_signal(*layer, *W[connection_index]);
+					}
+				}
 			}
+
+
+
+
+			// for (int j = 2; j < (int) layer_sets.size(); j++)
+			// {
+			// 	base_layer *layer = layer_sets[j];
+			// 	// add bias and activate these outputs (they should all be summed up from other branches at this point)
+			// 	layer->activate_nodes();
+
+			// 	// send output signal downstream (note in this code 'top' is input layer, 'bottom' is output - bucking tradition
+			// 	for (int i = 0; i < (int) layer->forward_linked_layers.size(); i ++)
+			// 	{
+			// 		std::pair<int, base_layer *> link = layer->forward_linked_layers[i];
+			// 		// instead of having a list of paired connections, just use the shape of W to determine connections
+			// 		// this is harder to read, but requires less look-ups
+			// 		// the 'link' variable is a std::pair created during the connect() call for the layers
+			// 		int connection_index = link.first;
+			// 		base_layer *p_bottom = link.second;
+			// 		// weight distribution of the signal to layers under it
+			// 		p_bottom->accumulate_signal(*layer, *W[connection_index]);
+
+			// 	}
+			// }
 			return layer_sets[layer_sets.size() - 1]->node.x;
 		}
 
