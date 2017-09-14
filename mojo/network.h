@@ -37,9 +37,7 @@
 #include <vector>
 
 #include "layer.h"
-#include "solver.h"
 #include "activation.h"
-#include "cost.h"
 
 #ifndef __for__
 #define __for__ for
@@ -81,83 +79,21 @@ namespace mojo {
 	{
 
 		int _size;
-
-		// training related stuff
-		float _skip_energy_level;
-		int _batch_size;
-		std::vector <float> _running_E;
-		double _running_sum_E;
-		cost_function *_cost_function;
-		solver *_solver;
-		static const unsigned char BATCH_RESERVED = 1, BATCH_FREE = 0, BATCH_COMPLETE = 2;
-		static const int BATCH_FILLED_COMPLETE = -2, BATCH_FILLED_IN_PROCESS = -1;
-
 	public:
-		// training progress stuff
-		int train_correct;
-		int train_skipped;
-		int stuck_counter;
-		int train_updates;
-		int train_samples;
-		int epoch_count;
-		int max_epochs;
-		float best_estimated_accuracy;
-		int best_accuracy_count;
-		float old_estimated_accuracy;
-		float estimated_accuracy;
-		// data augmentation stuff
-		int use_augmentation; // 0=off, 1=mojo, 2=opencv
-		int augment_x, augment_y;
-		int augment_h_flip, augment_v_flip;
-		mojo::pad_type augment_pad;
-		float augment_theta;
-		float augment_scale;
-
-
 		std::vector<base_layer *> layer_sets;
 
 		std::map<std::string, int> layer_map;  // name-to-index of layer for layer management
 		std::vector<std::pair<std::string, std::string>> layer_graph; // pairs of names of layers that are connected
 		std::vector<matrix *> W; // these are the weights between/connecting layers
 
-		// these sets are needed because we need copies for each item in mini-batch
-		std::vector< std::vector<matrix>> dW_sets; // only for training, will have _batch_size of these
-		std::vector< std::vector<matrix>> dbias_sets; // only for training, will have _batch_size of these
-		std::vector< unsigned char > batch_open; // only for training, will have _batch_size of these
-
-
-	network(const char* opt_name=NULL): _skip_energy_level(0.f), _batch_size(1)
+	network(const char* opt_name=NULL)
 		{
 			_size=0;
-			_solver = new_solver(opt_name);
-			_cost_function = NULL;
-			dW_sets.resize(_batch_size);
-			dbias_sets.resize(_batch_size);
-			batch_open.resize(_batch_size);
-			_running_sum_E = 0.;
-			train_correct = 0;
-			train_samples = 0;
-			train_skipped = 0;
-			epoch_count = 0;
-			max_epochs = 1000;
-			train_updates = 0;
-			estimated_accuracy = 0;
-			old_estimated_accuracy = 0;
-			stuck_counter = 0;
-			best_estimated_accuracy=0;
-			best_accuracy_count=0;
-			use_augmentation=0;
-			augment_x = 0; augment_y = 0; augment_h_flip = 0; augment_v_flip = 0;
-			augment_pad =mojo::edge;
-			augment_theta=0; augment_scale=0;
-
 		}
 
 		~network()
 		{
 			clear();
-			if (_cost_function) delete _cost_function;
-			if(_solver) delete _solver;
 		}
 
 		// call clear if you want to load a different configuration/model
@@ -182,25 +118,6 @@ namespace mojo {
 			*h = layer_sets[0]->node.rows;
 			*c = layer_sets[0]->node.chans;
 			return true;
-		}
-
-		// used to add some noise to weights
-		void heat_weights()
-		{
-			__for__(auto w __in__ W)
-			{
-				if (!w) continue;
-				matrix noise(w->cols, w->rows, w->chans);
-				noise.fill_random_normal(1.f/ noise.size());
-				*w += noise;
-			}
-		}
-
-		// used to add some noise to weights
-		void remove_means()
-		{
-			__for__(auto w __in__ W)
-				if(w) w->remove_mean();
 		}
 
 		// used to push a layer back in the ORDERED list of layers
@@ -236,13 +153,6 @@ namespace mojo {
 			matrix *w = l_bottom->new_connection(*l_top, w_i);
 			W.push_back(w);
 			layer_graph.push_back(std::make_pair(layer_name_top,layer_name_bottom));
-
-			// we need to let solver prepare space for stateful information
-			if (_solver)
-			{
-				if (w)_solver->push_back(w->cols, w->rows, w->chans);
-				else _solver->push_back(1, 1, 1);
-			}
 
 			int fan_in=l_bottom->fan_size();
 			int fan_out=l_top->fan_size();
@@ -510,98 +420,6 @@ namespace mojo {
 		}
 		bool read(const char *filename) { return  read(std::string(filename)); }
 
-
-		// ===========================================================================
-		// training part
-		// ===========================================================================
-
-		// resets the state of all batches to 'free' state
-		void reset_mini_batch() { memset(batch_open.data(), BATCH_FREE, batch_open.size()); }
-
-		// sets up number of mini batches (storage for sets of weight deltas)
-		void set_mini_batch_size(int batch_cnt)
-		{
-			if (batch_cnt<1) batch_cnt = 1;
-			_batch_size = batch_cnt;
-			dW_sets.resize(_batch_size);
-			dbias_sets.resize(_batch_size);
-			batch_open.resize(_batch_size);
-			reset_mini_batch();
-		}
-
-		int get_mini_batch_size() { return _batch_size; }
-
-		// return index of next free batch
-		// or returns -2 (BATCH_FILLED_COMPLETE) if no free batches - all complete (need a sync call)
-		// or returns -1 (BATCH_FILLED_IN_PROCESS) if no free batches - some still in progress (must wait to see if one frees)
-		int get_next_open_batch()
-		{
-			int reserved = 0;
-			unsigned filled = 0;
-			for (int i = 0; i < (int) batch_open.size(); i++)
-			{
-				if (batch_open[i] == BATCH_FREE) return i;
-				if (batch_open[i] == BATCH_RESERVED) reserved++;
-				if (batch_open[i] == BATCH_COMPLETE) filled++;
-			}
-			if (reserved>0) return BATCH_FILLED_IN_PROCESS; // all filled but wainting for reserves
-			if (filled == batch_open.size()) return BATCH_FILLED_COMPLETE; // all filled and complete
-
-			bail("threading error"); // should not get here  unless threading problem
-		}
-
-		mojo::matrix make_input(float *in)
-		{
-			mojo::matrix augmented_input;
-
-			std::vector<base_layer *> inputs;
-			int in_size = 0;
-			__for__(auto layer __in__ layer_sets)
-			{
-				if (dynamic_cast<input_layer*> (layer) != NULL)
-				{
-					inputs.push_back(layer);
-					in_size += layer->node.size();
-				}
-			}
-
-
-			if (use_augmentation > 0)
-			{
-
-				augmented_input.resize(in_size, 1, 1);
-				bool flip_h = ((rand() % 2)*augment_h_flip) ? true: false;
-				bool flip_v = ((rand() % 2)*augment_v_flip) ? true: false;
-				int shift_x = (rand() % (augment_x * 2 + 1)) - augment_x;
-				int shift_y = (rand() % (augment_y * 2 + 1)) - augment_y;
-				int offset = 0;
-				__for__(auto layer __in__ inputs)
-				{
-					// copy input to matrix type
-					mojo::matrix m(layer->node.cols, layer->node.rows, layer->node.chans, in + offset);
-					if (m.rows > 1 && m.cols > 1)
-					{
-						if (flip_v)m = m.flip_cols();
-						if (flip_h)	m = m.flip_rows();
-						mojo::matrix aug = m.shift(shift_x, shift_y, augment_pad);
-						memcpy(augmented_input.x + offset, aug.x, sizeof(float)*aug.size());
-						offset += aug.size();
-
-					}
-					else
-					{
-						memcpy(augmented_input.x + offset, m.x, sizeof(float)*m.size());
-						offset += m.size();
-					}
-				}
-			}
-			else
-			{
-				augmented_input.resize(in_size, 1, 1);
-				memcpy(augmented_input.x, in, sizeof(float)*in_size);
-			}
-			return augmented_input;
-		}
 
 	};
 }
