@@ -258,8 +258,6 @@ namespace mojo
 			int jstep=top.node.cols;
 			int output_index=0;
 			int *p_map = _max_map.data();
-			int pool_y=_pool_size; if(top.node.rows==1) pool_y=1;
-			int pool_x=_pool_size; if(top.node.cols==1) pool_x=1;
 			const float *top_node = top.node.x;
 
 			for(int k=0; k<top.node.chans; k++)
@@ -271,68 +269,11 @@ namespace mojo
 						const int base_index=i+(j)*jstep+k*kstep;
 						int max_i=base_index;
 						float max=top_node[base_index];
-						if(pool_x==2)
-						{
-							const float *n=top_node+base_index;
-							if(max<n[1]) { max = n[1]; max_i=base_index+1;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+jstep+1;}
-						}
-						else if(pool_x==3)
-						{
-							const float *n=top_node+base_index;
-							if(max<n[1]) { max = n[1]; max_i=base_index+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+2;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+jstep+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+jstep+2;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+2*jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+2*jstep+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+2*jstep+2;}
-						}
-						else if(pool_x==4)
-						{
-							const float *n=top_node+base_index;
-							if(max<n[1]) { max = n[1]; max_i=base_index+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+2;}
-							if(max<n[3]) { max = n[3]; max_i=base_index+3;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+jstep+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+jstep+2;}
-							if(max<n[3]) { max = n[3]; max_i=base_index+jstep+3;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+2*jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+2*jstep+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+2*jstep+2;}
-							if(max<n[3]) { max = n[3]; max_i=base_index+2*jstep+3;}
-							n+=jstep;
-							if(max<n[0]) { max = n[0]; max_i=base_index+3*jstep;}
-							if(max<n[1]) { max = n[1]; max_i=base_index+3*jstep+1;}
-							if(max<n[2]) { max = n[2]; max_i=base_index+3*jstep+2;}
-							if(max<n[3]) { max = n[3]; max_i=base_index+3*jstep+3;}
-						}
-						else
-						{
-							// speed up with optimized size version
-							for(int jj=0; jj<pool_y; jj+= 1)
-							{
-								for(int ii=0; ii<pool_x; ii+= 1)
-								{
-									int index=i+ii+(j+jj)*jstep+k*kstep;
-									if((max)<(top_node[index]))
-									{
-										max = top_node[index];
-										max_i=index;
-
-									}
-								}
-							}
-
-						}
+						const float *n=top_node+base_index;
+						if(max<n[1]) { max = n[1]; max_i=base_index+1;}
+						n+=jstep;
+						if(max<n[0]) { max = n[0]; max_i=base_index+jstep;}
+						if(max<n[1]) { max = n[1]; max_i=base_index+jstep+1;}
 						node.x[output_index] = top_node[max_i];
 						p_map[output_index] = max_i;
 						output_index++;
